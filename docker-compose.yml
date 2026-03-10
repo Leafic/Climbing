@@ -25,6 +25,9 @@ services:
   backend:
     build: ./backend
     container_name: climbing_backend
+    env_file:
+      - path: ./.env         # 프로젝트 루트 .env (GOOGLE_API_KEY 등 시크릿 보관)
+        required: false       # 파일 없어도 오류 없음
     environment:
       DATABASE_URL: postgresql://climbing_user:climbing_pass@db:5432/climbing_db
       UPLOAD_DIR: /app/uploads

@@ -376,27 +376,50 @@ npm run dev   # 포트 3000
         → 이력 조회
 ```
 
-## 실제 AI 연결 방법
+## Google Gemini API 연결
 
-[backend/app/services/analyzer.py](backend/app/services/analyzer.py)의 `get_analyzer()` 함수만 교체하면 됩니다.
+현재 분석 엔진은 **Google Gemini 2.0 Flash**를 사용합니다.
+`GOOGLE_API_KEY`가 설정되면 Gemini로, 없으면 MockAnalyzer로 자동 전환됩니다.
 
-```python
-# 현재 (Mock)
-def get_analyzer() -> BaseAnalyzer:
-    return MockAnalyzer()
+### API 키 발급
 
-# Claude API 연결 예시
-def get_analyzer() -> BaseAnalyzer:
-    return ClaudeAnalyzer(api_key=os.getenv("ANTHROPIC_API_KEY"))
+1. https://aistudio.google.com/apikey 접속
+2. **Create API Key** 클릭
+3. 발급된 키 복사
+
+### 로컬 직접 실행 시
+
+```bash
+# backend/.env 파일에 추가
+GOOGLE_API_KEY=AIza...your_key_here
 ```
 
-`BaseAnalyzer`의 두 메서드만 구현하면 나머지는 변경 없이 동작합니다.
+### Docker 실행 시
 
-```python
-class BaseAnalyzer(ABC):
-    def analyze(self, duration_seconds: float, memo: str = None) -> dict: ...
-    def reanalyze(self, original_result: dict, feedback_text: str, revision: int) -> dict: ...
+```bash
+# 방법 1: 프로젝트 루트에 .env 파일 생성
+echo "GOOGLE_API_KEY=AIza...your_key_here" > .env
+docker compose up -d --build
+
+# 방법 2: 명령어에 직접 전달
+GOOGLE_API_KEY=AIza...your_key_here docker compose up -d
 ```
+
+`docker-compose.yml`은 호스트의 `GOOGLE_API_KEY` 환경 변수를 자동으로 백엔드 컨테이너에 전달합니다.
+
+### Analyzer 동작 방식
+
+```
+GOOGLE_API_KEY 존재 여부
+        │
+        ├─ 있음 → GeminiAnalyzer (gemini-2.0-flash 호출)
+        │            ├─ analyze()    → 분석 프롬프트 전송 → JSON 파싱
+        │            └─ reanalyze() → 피드백 반영 프롬프트 전송 → JSON 파싱
+        │
+        └─ 없음 → MockAnalyzer (로컬 로직, API 호출 없음)
+```
+
+다른 AI 모델로 교체하려면 [backend/app/services/analyzer.py](backend/app/services/analyzer.py)의 `BaseAnalyzer`를 구현하고 `get_analyzer()`만 수정하면 됩니다.
 
 ## 분석 결과 JSON 구조
 
@@ -434,3 +457,4 @@ DATABASE_URL=postgresql://user:password@localhost:5432/climbing_db
 |---|---|---|
 | `DATABASE_URL` | `sqlite:///./climbing.db` | DB 연결 문자열 |
 | `UPLOAD_DIR` | `./uploads` | 영상 저장 경로 |
+| `GOOGLE_API_KEY` | (없음) | Gemini API 키. 없으면 MockAnalyzer로 fallback |
