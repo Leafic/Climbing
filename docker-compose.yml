@@ -1,0 +1,86 @@
+services:
+  # ─────────────────────────────────────────
+  # PostgreSQL DB
+  # ─────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: climbing_db
+    environment:
+      POSTGRES_USER: climbing_user
+      POSTGRES_PASSWORD: climbing_pass
+      POSTGRES_DB: climbing_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U climbing_user -d climbing_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # FastAPI 백엔드
+  # ─────────────────────────────────────────
+  backend:
+    build: ./backend
+    container_name: climbing_backend
+    environment:
+      DATABASE_URL: postgresql://climbing_user:climbing_pass@db:5432/climbing_db
+      UPLOAD_DIR: /app/uploads
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app        # 코드 변경 시 재빌드 없이 반영
+      - uploads_data:/app/uploads     # 업로드 파일 영속 저장
+    depends_on:
+      db:
+        condition: service_healthy    # DB 준비 후 백엔드 시작
+
+  # ─────────────────────────────────────────
+  # Next.js 프론트엔드
+  # ─────────────────────────────────────────
+  frontend:
+    build: ./frontend
+    container_name: climbing_frontend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  # ─────────────────────────────────────────
+  # [선택] Redis — 비동기 작업 큐 필요 시 추가
+  # 사용 시: depends_on에 redis 추가, 백엔드에 REDIS_URL 환경 변수 추가
+  # ─────────────────────────────────────────
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: climbing_redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+
+  # ─────────────────────────────────────────
+  # [선택] Celery Worker — AI 분석을 비동기로 처리할 때 추가
+  # redis 서비스 활성화 후 함께 사용
+  # ─────────────────────────────────────────
+  # worker:
+  #   build: ./backend
+  #   container_name: climbing_worker
+  #   command: celery -A app.celery_app worker --loglevel=info
+  #   environment:
+  #     DATABASE_URL: postgresql://climbing_user:climbing_pass@db:5432/climbing_db
+  #     REDIS_URL: redis://redis:6379/0
+  #   volumes:
+  #     - ./backend/app:/app/app
+  #     - uploads_data:/app/uploads
+  #   depends_on:
+  #     - db
+  #     - redis
+
+volumes:
+  postgres_data:
+  uploads_data:
+  # redis_data:   # redis 활성화 시 주석 해제
