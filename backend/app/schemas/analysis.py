@@ -9,11 +9,30 @@ class FailSegment(BaseModel):
     description: str
 
 
+class SuccessProbabilityItem(BaseModel):
+    score: int
+    reason: str
+
+
+class SuccessProbabilityBreakdown(BaseModel):
+    base: int = 20
+    centerOfMass: SuccessProbabilityItem
+    holdControl: SuccessProbabilityItem
+    energyAndMental: SuccessProbabilityItem
+    total: int
+
+
 class AnalysisResultJSON(BaseModel):
     summary: str
-    failReason: str
-    failSegment: FailSegment
-    strategySuggestions: List[str]
+    attemptResult: Optional[str] = "failure"   # "success" | "failure"
+    skillLevel: Optional[str] = "beginner"
+    failReason: Optional[str] = None
+    failSegment: Optional[FailSegment] = None
+    failFrameUrl: Optional[str] = None
+    successHighlights: Optional[List[str]] = None
+    successProbabilityBreakdown: Optional[SuccessProbabilityBreakdown] = None
+    coachingSuggestions: Optional[List[str]] = None
+    strategySuggestions: Optional[List[str]] = None
     postureFeedback: List[str]
     footworkFeedback: List[str]
     centerOfMassFeedback: List[str]
@@ -21,10 +40,14 @@ class AnalysisResultJSON(BaseModel):
     confidence: float
     userFeedbackApplied: bool
     revisedPoints: List[str]
+    questionAnswer: Optional[str] = None
+    modelUsed: Optional[str] = None
 
 
 class AnalysisJobCreate(BaseModel):
     video_id: str
+    skill_level: Optional[str] = "beginner"
+    attempt_result: Optional[str] = "failure"
     user_id: Optional[str] = None
 
 

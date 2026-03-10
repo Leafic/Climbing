@@ -8,19 +8,25 @@ export default function UploadPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<string>("");
+  const [skillLevel, setSkillLevel] = useState<"beginner" | "expert">("beginner");
+  const [attemptResult, setAttemptResult] = useState<"failure" | "success">("failure");
   const [videoId, setVideoId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<"upload" | "analyze">("upload");
 
   const handleUpload = async () => {
-    if (!file || !duration) {
-      setError("파일과 영상 길이를 모두 입력해주세요.");
+    if (!file) {
+      setError("영상 파일을 선택해주세요.");
+      return;
+    }
+    if (!duration) {
+      setError("영상 길이를 감지 중입니다. 잠시 후 다시 시도해주세요.");
       return;
     }
     const dur = parseFloat(duration);
     if (isNaN(dur) || dur <= 0) {
-      setError("올바른 영상 길이를 입력해주세요.");
+      setError("올바른 영상 길이를 감지하지 못했습니다.");
       return;
     }
     setError(null);
@@ -41,7 +47,7 @@ export default function UploadPage() {
     setError(null);
     setLoading(true);
     try {
-      const job = await createAnalysis(videoId);
+      const job = await createAnalysis(videoId, skillLevel, attemptResult);
       router.push(`/analysis/${job.id}`);
     } catch (e: any) {
       setError(e.message);
@@ -58,7 +64,8 @@ export default function UploadPage() {
       </div>
 
       {step === "upload" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col gap-5">
+          {/* 파일 선택 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               영상 파일 선택
@@ -66,29 +73,89 @@ export default function UploadPage() {
             <input
               type="file"
               accept="video/mp4,video/mov,video/avi,video/webm,.mp4,.mov,.avi,.webm"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                setFile(f);
+                setDuration("");
+                if (f) {
+                  const url = URL.createObjectURL(f);
+                  const v = document.createElement("video");
+                  v.preload = "metadata";
+                  v.onloadedmetadata = () => {
+                    setDuration(String(Math.round(v.duration)));
+                    URL.revokeObjectURL(url);
+                  };
+                  v.src = url;
+                }
+              }}
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
             {file && (
-              <p className="mt-1 text-xs text-gray-400">{file.name}</p>
+              <p className="mt-1 text-xs text-gray-400">
+                {file.name}{duration ? ` · ${duration}초` : " · 길이 감지 중..."}
+              </p>
             )}
           </div>
 
+          {/* 시도 결과 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              영상 길이 (초)
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              이번 시도 결과
             </label>
-            <input
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              placeholder="예: 90 (1분 30초)"
-              min="1"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="mt-1 text-xs text-gray-400">
-              실제 AI 연동 시 자동 감지됩니다. MVP에서는 직접 입력해주세요.
-            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setAttemptResult("failure")}
+                className={`flex flex-col items-center gap-1 px-4 py-4 rounded-xl border-2 transition-all ${
+                  attemptResult === "failure"
+                    ? "border-red-400 bg-red-50 text-red-700"
+                    : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                }`}
+              >
+                <span className="text-2xl">❌</span>
+                <span className="text-sm font-semibold">실패</span>
+                <span className="text-xs text-gray-400">다음 성공 전략 분석</span>
+              </button>
+              <button
+                onClick={() => setAttemptResult("success")}
+                className={`flex flex-col items-center gap-1 px-4 py-4 rounded-xl border-2 transition-all ${
+                  attemptResult === "success"
+                    ? "border-green-400 bg-green-50 text-green-700"
+                    : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                }`}
+              >
+                <span className="text-2xl">✅</span>
+                <span className="text-sm font-semibold">성공 (완등)</span>
+                <span className="text-xs text-gray-400">기술 완성도 + 개선 방향</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 숙련도 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              숙련도
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {(["beginner", "expert"] as const).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setSkillLevel(level)}
+                  className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl border-2 transition-all ${
+                    skillLevel === level
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  <span className="text-xl">{level === "beginner" ? "🧗" : "🏆"}</span>
+                  <span className="text-sm font-semibold">
+                    {level === "beginner" ? "초보자" : "숙련자"}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {level === "beginner" ? "4단계 상세 코칭" : "핵심 2가지 압축"}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {error && (
@@ -113,7 +180,10 @@ export default function UploadPage() {
             <span className="text-3xl">✅</span>
             <div>
               <p className="font-semibold text-gray-900">업로드 완료</p>
-              <p className="text-sm text-gray-500">영상이 서버에 저장되었습니다.</p>
+              <p className="text-sm text-gray-500">
+                {attemptResult === "success" ? "✅ 완등 성공" : "❌ 실패"} ·{" "}
+                {skillLevel === "beginner" ? "초보자" : "숙련자"} 모드로 분석합니다.
+              </p>
             </div>
           </div>
 

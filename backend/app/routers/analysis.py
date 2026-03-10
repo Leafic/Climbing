@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -14,6 +15,9 @@ from app.schemas.analysis import (
     AnalysisResultOut,
 )
 from app.services.analyzer import get_analyzer
+from app.utils.video_utils import extract_frame
+
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
@@ -29,7 +33,21 @@ def create_analysis(body: AnalysisJobCreate, db: Session = Depends(get_db)):
 
     try:
         analyzer = get_analyzer()
-        result_data = analyzer.analyze(duration_seconds=video.duration_seconds)
+        result_data = analyzer.analyze(
+            duration_seconds=video.duration_seconds,
+            video_path=video.file_path,
+            skill_level=body.skill_level or "beginner",
+            attempt_result=body.attempt_result or "failure",
+        )
+
+        # 실패 구간 프레임 추출
+        fail_segment = result_data.get("failSegment")
+        if fail_segment and isinstance(fail_segment, dict):
+            start_sec = fail_segment.get("startSec", 0)
+            frame_rel = f"frames/{video.id}_{int(start_sec)}.jpg"
+            frame_abs = os.path.join(UPLOAD_DIR, frame_rel)
+            if extract_frame(video.file_path, start_sec, frame_abs):
+                result_data["failFrameUrl"] = f"/uploads/{frame_rel}"
 
         analysis_repo.create_result(
             db=db,

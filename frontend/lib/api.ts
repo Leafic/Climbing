@@ -22,11 +22,30 @@ export interface FailSegment {
   description: string;
 }
 
+export interface SuccessProbabilityItem {
+  score: number;
+  reason: string;
+}
+
+export interface SuccessProbabilityBreakdown {
+  base: number;
+  centerOfMass: SuccessProbabilityItem;
+  holdControl: SuccessProbabilityItem;
+  energyAndMental: SuccessProbabilityItem;
+  total: number;
+}
+
 export interface AnalysisResultJSON {
   summary: string;
-  failReason: string;
-  failSegment: FailSegment;
-  strategySuggestions: string[];
+  attemptResult?: "success" | "failure";
+  skillLevel?: string;
+  failReason?: string | null;
+  failSegment?: FailSegment | null;
+  failFrameUrl?: string | null;
+  successHighlights?: string[] | null;
+  successProbabilityBreakdown?: SuccessProbabilityBreakdown;
+  coachingSuggestions?: string[];
+  strategySuggestions?: string[];
   postureFeedback: string[];
   footworkFeedback: string[];
   centerOfMassFeedback: string[];
@@ -34,6 +53,8 @@ export interface AnalysisResultJSON {
   confidence: number;
   userFeedbackApplied: boolean;
   revisedPoints: string[];
+  questionAnswer?: string | null;
+  modelUsed?: string | null;
 }
 
 export interface AnalysisResultOut {
@@ -85,11 +106,15 @@ export async function uploadVideo(
   return res.json();
 }
 
-export async function createAnalysis(videoId: string): Promise<AnalysisJobOut> {
+export async function createAnalysis(
+  videoId: string,
+  skillLevel: string = "beginner",
+  attemptResult: string = "failure"
+): Promise<AnalysisJobOut> {
   const res = await fetch(`${API_BASE}/api/analysis`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ video_id: videoId }),
+    body: JSON.stringify({ video_id: videoId, skill_level: skillLevel, attempt_result: attemptResult }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
