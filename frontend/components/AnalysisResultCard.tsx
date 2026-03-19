@@ -1,19 +1,14 @@
-import { AnalysisResultJSON, AnalysisResultOut, SuccessProbabilityBreakdown } from "@/lib/api";
+import { AnalysisResultJSON, AnalysisResultOut, KeyObservation, CoachingItem } from "@/lib/api";
 
 interface Props {
   result: AnalysisResultOut;
   isLatest?: boolean;
 }
 
-function ProbabilityBar({ value, isSuccess }: { value: number; isSuccess: boolean }) {
-  const color = isSuccess
-    ? value >= 80 ? "bg-green-500" : value >= 60 ? "bg-green-400" : "bg-yellow-400"
-    : value >= 70 ? "bg-green-500" : value >= 50 ? "bg-yellow-500" : "bg-red-500";
-  return (
-    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-      <div className={`h-3 rounded-full transition-all ${color}`} style={{ width: `${value}%` }} />
-    </div>
-  );
+function formatTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 function FeedbackList({ items, label }: { items: string[]; label: string }) {
@@ -33,35 +28,44 @@ function FeedbackList({ items, label }: { items: string[]; label: string }) {
   );
 }
 
-function SuccessProbabilitySection({ breakdown, isSuccess }: { breakdown: SuccessProbabilityBreakdown; isSuccess: boolean }) {
-  const items = [
-    { label: "무게중심/코어 안정성",   icon: "⚖️", max: 30, data: breakdown.centerOfMass },
-    { label: "홀드 제어 및 타이밍",    icon: "🤜", max: 30, data: breakdown.holdControl },
-    { label: "체력 안배 및 심리 루틴", icon: "🧠", max: 20, data: breakdown.energyAndMental },
-  ];
+function KeyObservationsSection({ observations }: { observations: KeyObservation[] }) {
+  const typeConfig = {
+    issue: { dot: "bg-red-500", badge: "bg-red-900/40 text-red-300", label: "문제" },
+    good:  { dot: "bg-green-400", badge: "bg-green-900/40 text-green-300", label: "잘됨" },
+    note:  { dot: "bg-gray-500", badge: "bg-gray-700 text-gray-300", label: "참고" },
+  };
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between text-xs text-gray-500">
-        <span>기본 {breakdown.base}점 시작</span>
-        <span className="font-semibold text-gray-700">최종: {breakdown.total}점</span>
+    <div className="bg-gray-900 rounded-xl p-4">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">🎬 영상 핵심 관찰 포인트</p>
+      <div className="flex flex-col">
+        {observations.map((obs, i) => {
+          const cfg = typeConfig[obs.type] ?? typeConfig.note;
+          const isLast = i === observations.length - 1;
+          return (
+            <div key={i} className="flex gap-3">
+              {/* 타임라인 선 + 점 */}
+              <div className="flex flex-col items-center shrink-0 w-3">
+                <div className={`w-3 h-3 rounded-full shrink-0 mt-1 ring-2 ring-gray-900 ${cfg.dot}`} />
+                {!isLast && <div className="w-px flex-1 bg-gray-700 mt-1" />}
+              </div>
+
+              {/* 내용 */}
+              <div className={`pb-4 flex-1 ${isLast ? "" : ""}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-sm font-bold text-white bg-gray-800 px-2 py-0.5 rounded">
+                    {formatTime(obs.timeSec)}
+                  </span>
+                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${cfg.badge}`}>
+                    {cfg.label}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-300 leading-relaxed">{obs.observation}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
-      {items.map(({ label, icon, max, data }) => (
-        <div key={label} className="bg-gray-50 rounded-lg p-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-medium text-gray-700">{icon} {label}</span>
-            <span className={`text-xs font-bold ${isSuccess ? "text-green-600" : "text-blue-600"}`}>
-              +{data.score}pt / {max}pt
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
-            <div
-              className={`h-1.5 rounded-full ${isSuccess ? "bg-green-400" : "bg-blue-400"}`}
-              style={{ width: `${(data.score / max) * 100}%` }}
-            />
-          </div>
-          <p className="text-xs text-gray-500 leading-relaxed">{data.reason}</p>
-        </div>
-      ))}
     </div>
   );
 }
@@ -72,7 +76,7 @@ export default function AnalysisResultCard({ result, isLatest }: Props) {
   const isSuccess = r.attemptResult === "success";
 
   return (
-    <div className={`bg-white rounded-xl border ${isLatest ? (isSuccess ? "border-green-300 shadow-md" : "border-blue-300 shadow-md") : "border-gray-200"} p-5 flex flex-col gap-5`}>
+    <div className={`bg-white rounded-xl border ${isLatest ? (isSuccess ? "border-green-300 shadow-md" : "border-blue-300 shadow-md") : "border-gray-200"} p-4 sm:p-5 flex flex-col gap-4 sm:gap-5`}>
 
       {/* Header */}
       {isLatest && (
@@ -124,23 +128,6 @@ export default function AnalysisResultCard({ result, isLatest }: Props) {
         <p className="text-sm text-gray-800 leading-relaxed">{r.summary}</p>
       </div>
 
-      {/* Score */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-semibold text-gray-700">
-            📊 {isSuccess ? "기술 완성도 점수" : "다음 시도 예상 성공 확률"}
-          </h4>
-          <span className="text-2xl font-bold text-gray-900">{r.completionProbability}%</span>
-        </div>
-        <ProbabilityBar value={r.completionProbability} isSuccess={isSuccess} />
-        <p className="text-xs text-gray-400 mt-1 mb-3">
-          신뢰도: {Math.round(r.confidence * 100)}% · 3가지 지표 합산 결과
-        </p>
-        {r.successProbabilityBreakdown && (
-          <SuccessProbabilitySection breakdown={r.successProbabilityBreakdown} isSuccess={isSuccess} />
-        )}
-      </div>
-
       {/* 성공: 잘된 점 */}
       {isSuccess && r.successHighlights && r.successHighlights.length > 0 && (
         <div>
@@ -172,7 +159,7 @@ export default function AnalysisResultCard({ result, isLatest }: Props) {
             {r.failFrameUrl && (
               <div className="relative">
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"}${r.failFrameUrl}`}
+                  src={r.failFrameUrl}
                   alt="실패 구간 캡처"
                   className="w-full object-cover max-h-48"
                 />
@@ -191,27 +178,32 @@ export default function AnalysisResultCard({ result, isLatest }: Props) {
         </div>
       )}
 
-      {/* Coaching Suggestions */}
+      {/* 핵심 관찰 포인트 */}
+      {r.keyObservations && r.keyObservations.length > 0 && (
+        <KeyObservationsSection observations={r.keyObservations} />
+      )}
+
+      {/* 분석 근거 */}
+      {r.analysisReasoning && (
+        <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+          <h4 className="text-xs font-bold text-slate-600 mb-1">🔍 이렇게 분석한 이유</h4>
+          <p className="text-sm text-slate-700 leading-relaxed">{r.analysisReasoning}</p>
+        </div>
+      )}
+
+      {/* 코칭 제안 */}
       {r.coachingSuggestions && r.coachingSuggestions.length > 0 && (
         <div>
           <h4 className="text-sm font-semibold text-gray-700 mb-2">
             🧗‍♂️ {isSuccess ? "더 높은 수준을 위한 코칭" : "맞춤형 코칭 제안"}
-            <span className="ml-2 text-xs font-normal text-gray-400">
-              {isExpert ? "숙련자 — 핵심 2가지 압축" : "초보자 — 4단계 상세"}
-            </span>
           </h4>
           <div className="flex flex-col gap-2">
-            {r.coachingSuggestions.map((s, i) => {
-              const labels = isExpert
-                ? ["핵심 1", "핵심 2"]
-                : ["동작 및 순서", "루트 접근 전략", "반복 훈련 방법", "심리 및 타이밍"];
-              return (
-                <div key={i} className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
-                  <p className="text-xs font-bold text-blue-500 mb-1">{labels[i] ?? `${i + 1}`}</p>
-                  <p className="text-sm text-blue-800 leading-relaxed">{s}</p>
-                </div>
-              );
-            })}
+            {r.coachingSuggestions.map((item: CoachingItem, i: number) => (
+              <div key={i} className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
+                <p className="text-xs font-bold text-blue-500 mb-1">{item.label}</p>
+                <p className="text-sm text-blue-800 leading-relaxed">{item.content}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}

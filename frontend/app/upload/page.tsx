@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { uploadVideo, createAnalysis } from "@/lib/api";
+
+const ANALYSIS_STEPS = [
+  { pct: 10, label: "영상 데이터 준비 중..." },
+  { pct: 30, label: "AI 모델에 전송 중..." },
+  { pct: 55, label: "클라이밍 동작 분석 중..." },
+  { pct: 75, label: "결과 정리 중..." },
+  { pct: 90, label: "마무리 중..." },
+];
 
 export default function UploadPage() {
   const router = useRouter();
@@ -14,6 +22,18 @@ export default function UploadPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<"upload" | "analyze">("upload");
+  const [analysisStepIdx, setAnalysisStepIdx] = useState(0);
+
+  useEffect(() => {
+    if (!loading || step !== "analyze") {
+      setAnalysisStepIdx(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setAnalysisStepIdx((prev) => Math.min(prev + 1, ANALYSIS_STEPS.length - 1));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [loading, step]);
 
   const handleUpload = async () => {
     if (!file) {
@@ -64,7 +84,7 @@ export default function UploadPage() {
       </div>
 
       {step === "upload" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col gap-5">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 flex flex-col gap-4 sm:gap-5">
           {/* 파일 선택 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -72,7 +92,7 @@ export default function UploadPage() {
             </label>
             <input
               type="file"
-              accept="video/mp4,video/mov,video/avi,video/webm,.mp4,.mov,.avi,.webm"
+              accept="video/*"
               onChange={(e) => {
                 const f = e.target.files?.[0] ?? null;
                 setFile(f);
@@ -175,7 +195,7 @@ export default function UploadPage() {
       )}
 
       {step === "analyze" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <span className="text-3xl">✅</span>
             <div>
@@ -186,6 +206,43 @@ export default function UploadPage() {
               </p>
             </div>
           </div>
+
+          {loading && (
+            <div className="flex flex-col gap-3 py-2">
+              {/* 단계 목록 */}
+              <div className="flex flex-col gap-2">
+                {ANALYSIS_STEPS.map((s, i) => {
+                  const isDone = i < analysisStepIdx;
+                  const isActive = i === analysisStepIdx;
+                  return (
+                    <div key={i} className={`flex items-center gap-2 text-sm transition-opacity ${i > analysisStepIdx ? "opacity-30" : "opacity-100"}`}>
+                      {isDone ? (
+                        <span className="text-green-500 w-4 shrink-0">✓</span>
+                      ) : isActive ? (
+                        <span className="w-4 shrink-0 flex items-center">
+                          <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse inline-block" />
+                        </span>
+                      ) : (
+                        <span className="w-4 h-3 shrink-0" />
+                      )}
+                      <span className={isActive ? "text-blue-700 font-medium" : isDone ? "text-gray-400 line-through" : "text-gray-400"}>
+                        {s.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 프로그레스 바 */}
+              <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                <div
+                  className="h-2 rounded-full bg-blue-500 transition-all duration-700"
+                  style={{ width: `${ANALYSIS_STEPS[analysisStepIdx].pct}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-400 text-center">AI 분석에 30초~1분 정도 소요됩니다.</p>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600">
@@ -198,7 +255,7 @@ export default function UploadPage() {
             disabled={loading}
             className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {loading ? "분석 요청 중..." : "🤖 AI 분석 시작"}
+            {loading ? "분석 중..." : "🤖 AI 분석 시작"}
           </button>
         </div>
       )}

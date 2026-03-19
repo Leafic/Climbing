@@ -6,15 +6,15 @@ services:
     image: postgres:16-alpine
     container_name: climbing_db
     environment:
-      POSTGRES_USER: climbing_user
-      POSTGRES_PASSWORD: climbing_pass
-      POSTGRES_DB: climbing_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U climbing_user -d climbing_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,7 +29,7 @@ services:
       - path: ./.env         # 프로젝트 루트 .env (GOOGLE_API_KEY 등 시크릿 보관)
         required: false       # 파일 없어도 오류 없음
     environment:
-      DATABASE_URL: postgresql://climbing_user:climbing_pass@db:5432/climbing_db
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       UPLOAD_DIR: /app/uploads
     ports:
       - "8000:8000"
@@ -44,10 +44,11 @@ services:
   # Next.js 프론트엔드
   # ─────────────────────────────────────────
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://backend:8000
     container_name: climbing_frontend
-    environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
     ports:
       - "3000:3000"
     depends_on:

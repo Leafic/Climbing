@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col items-center text-center py-16 gap-8">
+    <div className="flex flex-col items-center text-center py-10 sm:py-16 gap-6 sm:gap-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-3">
           클라이밍 영상 AI 분석
@@ -18,7 +18,7 @@ export default function HomePage() {
           { icon: "📹", label: "영상 업로드" },
           { icon: "🤖", label: "AI 자동 분석" },
           { icon: "💬", label: "피드백 반영 재분석" },
-          { icon: "📈", label: "완등 가능성 계산" },
+          { icon: "🗺️", label: "벽 사진 루트 찾기" },
         ].map((item) => (
           <div
             key={item.label}
@@ -30,12 +30,20 @@ export default function HomePage() {
         ))}
       </div>
 
-      <Link
-        href="/upload"
-        className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-      >
-        지금 분석하기
-      </Link>
+      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+        <Link
+          href="/upload"
+          className="flex-1 text-center bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+        >
+          영상 분석하기
+        </Link>
+        <Link
+          href="/route-finder"
+          className="flex-1 text-center bg-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
+        >
+          루트 찾기
+        </Link>
+      </div>
     </div>
   );
 }

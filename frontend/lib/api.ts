@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const API_BASE = "";
 
 export interface VideoUploadResponse {
   id: string;
@@ -22,17 +22,15 @@ export interface FailSegment {
   description: string;
 }
 
-export interface SuccessProbabilityItem {
-  score: number;
-  reason: string;
+export interface KeyObservation {
+  timeSec: number;
+  observation: string;
+  type: "issue" | "good" | "note";
 }
 
-export interface SuccessProbabilityBreakdown {
-  base: number;
-  centerOfMass: SuccessProbabilityItem;
-  holdControl: SuccessProbabilityItem;
-  energyAndMental: SuccessProbabilityItem;
-  total: number;
+export interface CoachingItem {
+  label: string;
+  content: string;
 }
 
 export interface AnalysisResultJSON {
@@ -43,9 +41,8 @@ export interface AnalysisResultJSON {
   failSegment?: FailSegment | null;
   failFrameUrl?: string | null;
   successHighlights?: string[] | null;
-  successProbabilityBreakdown?: SuccessProbabilityBreakdown;
-  coachingSuggestions?: string[];
-  strategySuggestions?: string[];
+  keyObservations?: KeyObservation[] | null;
+  coachingSuggestions?: CoachingItem[];
   postureFeedback: string[];
   footworkFeedback: string[];
   centerOfMassFeedback: string[];
@@ -55,6 +52,7 @@ export interface AnalysisResultJSON {
   revisedPoints: string[];
   questionAnswer?: string | null;
   modelUsed?: string | null;
+  analysisReasoning?: string | null;
 }
 
 export interface AnalysisResultOut {
@@ -148,5 +146,47 @@ export async function submitFeedback(
 export async function getHistory(analysisId: string): Promise<AnalysisHistoryOut> {
   const res = await fetch(`${API_BASE}/api/analysis/${analysisId}/history`);
   if (!res.ok) throw new Error("이력을 불러오지 못했습니다.");
+  return res.json();
+}
+
+// ─── Route Analysis ───
+
+export interface RouteSuggestion {
+  name: string;
+  difficulty: string;
+  description: string;
+  steps: string[];
+  approachStrategy: string;
+  keyTips: string[];
+}
+
+export interface RouteAnalysisResult {
+  wallDescription: string;
+  holdColor: string;
+  identifiedHolds: number;
+  routes: RouteSuggestion[];
+  generalAdvice: string;
+  confidence: number;
+  modelUsed?: string;
+}
+
+export async function analyzeRoute(
+  file: File,
+  holdColor: string,
+  skillLevel: string = "beginner"
+): Promise<RouteAnalysisResult> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("hold_color", holdColor);
+  form.append("skill_level", skillLevel);
+
+  const res = await fetch(`${API_BASE}/api/routes/analyze`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "루트 분석 실패");
+  }
   return res.json();
 }

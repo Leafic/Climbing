@@ -119,7 +119,7 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
 
       {/* Feedback Section */}
       {detail?.job.status === "completed" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 flex flex-col gap-4">
           <div>
             <h3 className="font-semibold text-gray-900 mb-1">추가 의견 입력</h3>
             <p className="text-xs text-gray-400">

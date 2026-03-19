@@ -9,17 +9,15 @@ class FailSegment(BaseModel):
     description: str
 
 
-class SuccessProbabilityItem(BaseModel):
-    score: int
-    reason: str
+class KeyObservation(BaseModel):
+    timeSec: float
+    observation: str
+    type: str  # "issue" | "good" | "note"
 
 
-class SuccessProbabilityBreakdown(BaseModel):
-    base: int = 20
-    centerOfMass: SuccessProbabilityItem
-    holdControl: SuccessProbabilityItem
-    energyAndMental: SuccessProbabilityItem
-    total: int
+class CoachingItem(BaseModel):
+    label: str
+    content: str
 
 
 class AnalysisResultJSON(BaseModel):
@@ -30,9 +28,8 @@ class AnalysisResultJSON(BaseModel):
     failSegment: Optional[FailSegment] = None
     failFrameUrl: Optional[str] = None
     successHighlights: Optional[List[str]] = None
-    successProbabilityBreakdown: Optional[SuccessProbabilityBreakdown] = None
-    coachingSuggestions: Optional[List[str]] = None
-    strategySuggestions: Optional[List[str]] = None
+    keyObservations: Optional[List[KeyObservation]] = None
+    coachingSuggestions: Optional[List[CoachingItem]] = None
     postureFeedback: List[str]
     footworkFeedback: List[str]
     centerOfMassFeedback: List[str]
@@ -42,6 +39,7 @@ class AnalysisResultJSON(BaseModel):
     revisedPoints: List[str]
     questionAnswer: Optional[str] = None
     modelUsed: Optional[str] = None
+    analysisReasoning: Optional[str] = None
 
 
 class AnalysisJobCreate(BaseModel):
