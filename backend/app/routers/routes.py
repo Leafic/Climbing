@@ -21,15 +21,30 @@ def analyze_route(
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
 
-    # 임시 저장
-    ext = os.path.splitext(file.filename or "img.jpg")[1] or ".jpg"
+    ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
+    ext = os.path.splitext(file.filename or "img.jpg")[1].lower() or ".jpg"
+    if ext not in ALLOWED_IMAGE_EXT:
+        raise HTTPException(status_code=400, detail="지원하지 않는 이미지 형식입니다.")
+
+    if len(hold_color) > 50:
+        raise HTTPException(status_code=400, detail="홀드 색상은 50자 이내로 입력해주세요.")
+
+    # 임시 저장 (크기 제한 20MB)
+    MAX_IMAGE_SIZE = 20 * 1024 * 1024
     temp_name = f"route_{uuid.uuid4().hex}{ext}"
     temp_path = os.path.join(UPLOAD_DIR, temp_name)
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
     try:
+        size = 0
         with open(temp_path, "wb") as f:
-            f.write(file.file.read())
+            while chunk := file.file.read(8192):
+                size += len(chunk)
+                if size > MAX_IMAGE_SIZE:
+                    f.close()
+                    os.remove(temp_path)
+                    raise HTTPException(status_code=400, detail="이미지 크기가 20MB를 초과합니다.")
+                f.write(chunk)
 
         analyzer = get_analyzer()
         result = analyzer.analyze_route(
@@ -40,7 +55,7 @@ def analyze_route(
         return result
     except Exception as e:
         logger.exception("루트 분석 실패")
-        raise HTTPException(status_code=500, detail=f"루트 분석 중 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail="루트 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
     finally:
         # 임시 파일 삭제
         if os.path.exists(temp_path):

@@ -59,7 +59,9 @@ def create_analysis(body: AnalysisJobCreate, db: Session = Depends(get_db)):
         analysis_repo.update_job_status(db, job, JobStatus.completed)
     except Exception as e:
         analysis_repo.update_job_status(db, job, JobStatus.failed)
-        raise HTTPException(status_code=500, detail=f"분석 중 오류가 발생했습니다: {str(e)}")
+        import logging
+        logging.getLogger(__name__).exception("분석 실패")
+        raise HTTPException(status_code=500, detail="분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
 
     return job
 

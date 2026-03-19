@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Any
 from datetime import datetime
 
@@ -72,7 +72,7 @@ class AnalysisResultOut(BaseModel):
 
 
 class FeedbackCreate(BaseModel):
-    feedback_text: str
+    feedback_text: str = Field(..., min_length=1, max_length=2000)
 
 
 class FeedbackOut(BaseModel):
