@@ -48,6 +48,7 @@ class Video(Base):
     device_id = Column(String(64), nullable=True, index=True)
     filename = Column(String(255), nullable=False)
     file_path = Column(String(512), nullable=False)
+    file_hash = Column(String(64), nullable=True, index=True)
     duration_seconds = Column(Float, nullable=False)
     created_at = Column(DateTime, default=now_kst)
 

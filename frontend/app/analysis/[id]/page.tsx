@@ -166,6 +166,28 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
         </div>
       )}
 
+      {/* 다음 연습 포인트 요약 */}
+      {detail?.latest_result?.result_json && (() => {
+        const rj = detail.latest_result.result_json;
+        const issues = (rj.keyObservations || []).filter((o: any) => o.type === "issue").map((o: any) => o.observation);
+        const coaching = (rj.coachingSuggestions || []).slice(0, 2).map((c: any) => c.label);
+        const points = [...coaching, ...issues].slice(0, 3);
+        if (points.length === 0) return null;
+        return (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-blue-800 mb-2">다음 연습 포인트</h3>
+            <div className="flex flex-col gap-1.5">
+              {points.map((p: string, i: number) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="text-blue-500 text-xs mt-0.5 shrink-0">{i + 1}.</span>
+                  <span className="text-sm text-blue-700">{p}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* 개선 추이 그래프 */}
       {showHistory && history && history.results.length >= 2 && (
         <TrendChart results={history.results} />
@@ -304,6 +326,34 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
           <div className="flex flex-col gap-4">
             {[...history.results].reverse().map((r) => (
               <AnalysisResultCard key={r.id} result={r} isLatest={r.revision === history.job.current_revision} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 같은 영상의 다른 분석 */}
+      {detail && detail.related_analyses.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 flex flex-col gap-3">
+          <h3 className="font-semibold text-gray-900 text-sm">이 영상의 다른 분석</h3>
+          <div className="flex flex-col gap-2">
+            {detail.related_analyses.map((ra) => (
+              <button
+                key={ra.job_id}
+                onClick={() => router.push(`/analysis/${ra.job_id}`)}
+                className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 rounded-lg px-3 py-2.5 transition-colors text-left"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-700 truncate">{ra.summary || "분석 결과 없음"}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(ra.created_at).toLocaleString("ko-KR")} · rev.{ra.current_revision}
+                  </p>
+                </div>
+                {ra.completion_probability != null && (
+                  <span className="text-xs font-medium text-blue-600 ml-2 shrink-0">
+                    {ra.completion_probability}%
+                  </span>
+                )}
+              </button>
             ))}
           </div>
         </div>

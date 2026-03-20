@@ -3,10 +3,13 @@
   "short_name": "ClimbAI",
   "description": "클라이밍 영상을 AI로 분석하고 루트를 찾아드립니다",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f9fafb",
   "theme_color": "#2563eb",
   "orientation": "portrait",
+  "categories": ["sports", "fitness"],
+  "lang": "ko",
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -20,5 +23,19 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "share_target": {
+    "action": "/upload",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "file",
+          "accept": ["video/*"]
+        }
+      ]
+    }
+  }
 }

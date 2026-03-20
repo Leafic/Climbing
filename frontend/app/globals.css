@@ -1,3 +1,48 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 모바일 앱 환경 최적화 */
+html {
+  /* iOS 바운스 스크롤 방지 (standalone 모드) */
+  overscroll-behavior: none;
+  /* iOS safe-area 대응 */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+body {
+  /* 텍스트 선택 방지 (앱 느낌) - 입력 필드 제외 */
+  -webkit-user-select: none;
+  user-select: none;
+  /* iOS 탭 하이라이트 제거 */
+  -webkit-tap-highlight-color: transparent;
+  /* 부드러운 스크롤 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 입력 필드에서는 텍스트 선택 허용 */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* iOS standalone 모드에서 상단 노치 대응 */
+@supports (padding-top: env(safe-area-inset-top)) {
+  header {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* 하단 네비 safe-area */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-nav-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Pull-to-refresh 방지 (standalone 모드) */
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: contain;
+  }
+}

@@ -86,11 +86,38 @@ class FeedbackOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class RelatedAnalysisOut(BaseModel):
+    job_id: str
+    status: str
+    current_revision: int
+    summary: Optional[str] = None
+    completion_probability: Optional[int] = None
+    created_at: datetime
+
+
 class AnalysisDetailOut(BaseModel):
     job: AnalysisJobOut
     latest_result: Optional[AnalysisResultOut]
     video_filename: str
     video_duration: float
+    related_analyses: List[RelatedAnalysisOut] = []
+
+
+class MyAnalysisItem(BaseModel):
+    job_id: str
+    status: str
+    current_revision: int
+    video_filename: str
+    video_duration: float
+    summary: Optional[str] = None
+    attempt_result: Optional[str] = None
+    completion_probability: Optional[int] = None
+    created_at: datetime
+
+
+class MyAnalysesOut(BaseModel):
+    total: int
+    analyses: List[MyAnalysisItem]
 
 
 class AnalysisHistoryOut(BaseModel):

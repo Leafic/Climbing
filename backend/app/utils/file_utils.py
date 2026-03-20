@@ -1,3 +1,4 @@
+import hashlib
 import os
 import re
 import uuid
@@ -33,8 +34,9 @@ def save_upload_file(upload_file: UploadFile) -> str:
     if not real_dest.startswith(real_upload):
         raise ValueError("잘못된 파일 경로입니다.")
 
-    # 크기 제한 체크하며 저장
+    # 크기 제한 체크하며 저장 + 해시 계산
     size = 0
+    sha256 = hashlib.sha256()
     with open(dest_path, "wb") as f:
         while chunk := upload_file.file.read(8192):
             size += len(chunk)
@@ -43,5 +45,7 @@ def save_upload_file(upload_file: UploadFile) -> str:
                 os.remove(dest_path)
                 raise ValueError(f"파일 크기가 {MAX_FILE_SIZE // (1024*1024)}MB를 초과합니다.")
             f.write(chunk)
+            sha256.update(chunk)
 
-    return dest_path
+    file_hash = sha256.hexdigest()
+    return dest_path, file_hash

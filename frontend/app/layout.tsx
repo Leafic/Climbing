@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PWARegister } from "./pwa-register";
+import BottomNav from "@/components/BottomNav";
+import InstallPrompt from "@/components/InstallPrompt";
 
 export const metadata: Metadata = {
   title: "ClimbAI - 클라이밍 AI 분석기",
@@ -19,6 +21,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: "#2563eb",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -42,7 +45,9 @@ export default function RootLayout({
             </a>
           </div>
         </header>
-        <main className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6">{children}</main>
+        <main className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-20">{children}</main>
+        <BottomNav />
+        <InstallPrompt />
         <PWARegister />
       </body>
     </html>

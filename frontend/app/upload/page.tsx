@@ -21,8 +21,9 @@ export default function UploadPage() {
   const [videoId, setVideoId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [step, setStep] = useState<"upload" | "analyze">("upload");
+  const [step, setStep] = useState<"upload" | "analyze" | "duplicate">("upload");
   const [analysisStepIdx, setAnalysisStepIdx] = useState(0);
+  const [existingAnalysisId, setExistingAnalysisId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading || step !== "analyze") {
@@ -54,7 +55,12 @@ export default function UploadPage() {
     try {
       const video = await uploadVideo(file, dur);
       setVideoId(video.id);
-      setStep("analyze");
+      if (video.is_duplicate) {
+        setExistingAnalysisId(video.existing_analysis_id);
+        setStep("duplicate");
+      } else {
+        setStep("analyze");
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -83,6 +89,21 @@ export default function UploadPage() {
         <h1 className="text-2xl font-bold mb-1">영상 업로드</h1>
         <p className="text-gray-500 text-sm">30초~3분 이내 클라이밍 영상을 업로드해주세요.</p>
       </div>
+
+      {step === "upload" && (
+        <details className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+          <summary className="text-sm font-medium text-blue-700 cursor-pointer">
+            촬영 팁 보기
+          </summary>
+          <ul className="mt-2 text-xs text-blue-600 flex flex-col gap-1.5 pl-1">
+            <li>- 벽 전체가 보이도록 정면에서 촬영</li>
+            <li>- 클라이머의 손발이 잘 보이는 각도 유지</li>
+            <li>- 가로(횡) 모드 촬영 권장</li>
+            <li>- 조명이 밝을수록 분석 정확도 향상</li>
+            <li>- 한 시도(출발~완등/낙하)만 포함</li>
+          </ul>
+        </details>
+      )}
 
       {step === "upload" && (
         <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 flex flex-col gap-4 sm:gap-5">
@@ -165,7 +186,7 @@ export default function UploadPage() {
                 <button
                   key={level.value}
                   onClick={() => setSkillLevel(level.value)}
-                  className={`flex flex-col items-center gap-1 px-2 sm:px-4 py-3 rounded-xl border-2 transition-all ${
+                  className={`flex flex-col items-center gap-1.5 px-2 sm:px-4 py-4 rounded-xl border-2 transition-all min-h-[80px] ${
                     skillLevel === level.value
                       ? "border-blue-500 bg-blue-50 text-blue-700"
                       : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
@@ -173,7 +194,7 @@ export default function UploadPage() {
                 >
                   <span className="text-xl">{level.icon}</span>
                   <span className="text-sm font-semibold">{level.label}</span>
-                  <span className="text-[10px] sm:text-xs text-gray-400 text-center leading-tight">{level.desc}</span>
+                  <span className="text-xs text-gray-400 text-center leading-tight">{level.desc}</span>
                 </button>
               ))}
             </div>
@@ -191,6 +212,41 @@ export default function UploadPage() {
             className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? "업로드 중..." : "업로드"}
+          </button>
+        </div>
+      )}
+
+      {step === "duplicate" && (
+        <div className="bg-white rounded-xl border border-amber-200 p-4 sm:p-6 flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🔄</span>
+            <div>
+              <p className="font-semibold text-gray-900">이전에 업로드한 영상이에요</p>
+              <p className="text-sm text-gray-500">같은 영상을 다시 분석하거나, 이전 결과를 확인할 수 있어요.</p>
+            </div>
+          </div>
+
+          {existingAnalysisId && (
+            <button
+              onClick={() => router.push(`/analysis/${existingAnalysisId}`)}
+              className="bg-amber-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-amber-600 transition-colors"
+            >
+              이전 분석 결과 보기
+            </button>
+          )}
+
+          <button
+            onClick={() => setStep("analyze")}
+            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+          >
+            새로 분석하기
+          </button>
+
+          <button
+            onClick={() => { setStep("upload"); setVideoId(null); setExistingAnalysisId(null); }}
+            className="text-sm text-gray-400 underline"
+          >
+            다른 영상 올리기
           </button>
         </div>
       )}
@@ -246,18 +302,30 @@ export default function UploadPage() {
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600">
-              {error}
+            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex flex-col gap-2">
+              <p className="text-sm text-red-600">{error}</p>
+              <button
+                onClick={() => { setError(null); handleAnalyze(); }}
+                className="text-sm text-red-600 font-medium underline self-start"
+              >
+                다시 시도
+              </button>
             </div>
           )}
 
-          <button
-            onClick={handleAnalyze}
-            disabled={loading}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {loading ? "분석 중..." : "🤖 AI 분석 시작"}
-          </button>
+          {!loading && !error && (
+            <button
+              onClick={handleAnalyze}
+              className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+            >
+              🤖 AI 분석 시작
+            </button>
+          )}
+          {loading && (
+            <button disabled className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold opacity-50 cursor-not-allowed">
+              분석 중...
+            </button>
+          )}
         </div>
       )}
     </div>

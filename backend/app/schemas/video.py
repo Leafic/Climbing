@@ -8,6 +8,8 @@ class VideoUploadResponse(BaseModel):
     filename: str
     duration_seconds: float
     created_at: datetime
+    is_duplicate: bool = False
+    existing_analysis_id: str | None = None
 
     model_config = {"from_attributes": True}
 

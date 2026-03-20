@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models.models import JobStatus
+from app.models.models import AnalysisJob, JobStatus
 from app.repositories import analysis_repo, video_repo, gym_repo
 from app.schemas.analysis import (
     AnalysisJobCreate,
@@ -15,6 +15,9 @@ from app.schemas.analysis import (
     FeedbackCreate,
     FeedbackOut,
     AnalysisResultOut,
+    RelatedAnalysisOut,
+    MyAnalysisItem,
+    MyAnalysesOut,
 )
 from app.services.analyzer import get_analyzer
 from app.utils.video_utils import extract_frame, extract_frames_batch, extract_gif
@@ -287,13 +290,52 @@ def create_analysis(body: AnalysisJobCreate, db: Session = Depends(get_db)):
         # 분석 결과에서 자동으로 사용자 프로파일 축적 (피드백 없이도 쌓임)
         if body.device_id:
             _auto_accumulate_profile(db, body.device_id, result_data)
+    except RuntimeError as e:
+        analysis_repo.update_job_status(db, job, JobStatus.failed)
+        logger.exception("분석 실패 (할당량)")
+        raise HTTPException(status_code=429, detail="AI 모델 사용량이 초과되었습니다. 잠시 후 다시 시도해주세요.")
+    except ValueError as e:
+        analysis_repo.update_job_status(db, job, JobStatus.failed)
+        logger.exception("분석 실패 (응답 파싱)")
+        raise HTTPException(status_code=502, detail="AI 응답을 처리하지 못했습니다. 다시 시도해주세요.")
     except Exception as e:
         analysis_repo.update_job_status(db, job, JobStatus.failed)
-        import logging
-        logging.getLogger(__name__).exception("분석 실패")
+        logger.exception("분석 실패")
+        err_msg = str(e).lower()
+        if any(k in err_msg for k in ["timeout", "deadline"]):
+            raise HTTPException(status_code=504, detail="AI 분석 시간이 초과되었습니다. 더 짧은 영상으로 시도해주세요.")
         raise HTTPException(status_code=500, detail="분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
 
     return job
+
+
+@router.get("/device/{device_id}/list", response_model=MyAnalysesOut)
+def get_my_analyses(device_id: str, db: Session = Depends(get_db)):
+    """디바이스별 전체 분석 목록"""
+    jobs = (
+        db.query(AnalysisJob)
+        .filter(AnalysisJob.device_id == device_id)
+        .order_by(AnalysisJob.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    items = []
+    for job in jobs:
+        latest = analysis_repo.get_latest_result(db, job.id)
+        rj = latest.result_json if latest and latest.result_json else {}
+        items.append(MyAnalysisItem(
+            job_id=job.id,
+            status=job.status.value if hasattr(job.status, 'value') else str(job.status),
+            current_revision=job.current_revision,
+            video_filename=job.video.filename if job.video else "unknown",
+            video_duration=job.video.duration_seconds if job.video else 0,
+            summary=latest.summary if latest else None,
+            attempt_result=rj.get("attemptResult"),
+            completion_probability=rj.get("completionProbability"),
+            created_at=job.created_at,
+        ))
+    total = db.query(AnalysisJob).filter(AnalysisJob.device_id == device_id).count()
+    return MyAnalysesOut(total=total, analyses=items)
 
 
 @router.get("/{analysis_id}", response_model=AnalysisDetailOut)
@@ -304,11 +346,32 @@ def get_analysis(analysis_id: str, db: Session = Depends(get_db)):
 
     latest_result = analysis_repo.get_latest_result(db, job.id)
 
+    # 같은 영상으로 수행한 다른 분석 목록
+    related = []
+    other_jobs = (
+        db.query(AnalysisJob)
+        .filter(AnalysisJob.video_id == job.video_id, AnalysisJob.id != job.id)
+        .order_by(AnalysisJob.created_at.desc())
+        .limit(10)
+        .all()
+    )
+    for oj in other_jobs:
+        oj_result = analysis_repo.get_latest_result(db, oj.id)
+        related.append(RelatedAnalysisOut(
+            job_id=oj.id,
+            status=oj.status.value if hasattr(oj.status, 'value') else str(oj.status),
+            current_revision=oj.current_revision,
+            summary=oj_result.summary if oj_result else None,
+            completion_probability=oj_result.result_json.get("completionProbability") if oj_result and oj_result.result_json else None,
+            created_at=oj.created_at,
+        ))
+
     return AnalysisDetailOut(
         job=AnalysisJobOut.model_validate(job),
         latest_result=AnalysisResultOut.model_validate(latest_result) if latest_result else None,
         video_filename=job.video.filename,
         video_duration=job.video.duration_seconds,
+        related_analyses=related,
     )
 
 
@@ -336,12 +399,25 @@ def submit_feedback(analysis_id: str, body: FeedbackCreate, db: Session = Depend
     if job.device_id:
         _extract_and_save_corrections(db, job.device_id, body.feedback_text)
 
-    analyzer = get_analyzer()
-    new_result_data = analyzer.reanalyze(
-        original_result=latest_result.result_json,
-        feedback_text=body.feedback_text,
-        revision=job.current_revision + 1,
-    )
+    next_revision = job.current_revision + 1
+
+    try:
+        analyzer = get_analyzer()
+        new_result_data = analyzer.reanalyze(
+            original_result=latest_result.result_json,
+            feedback_text=body.feedback_text,
+            revision=next_revision,
+        )
+    except RuntimeError:
+        raise HTTPException(status_code=429, detail="AI 모델 사용량이 초과되었습니다. 잠시 후 다시 시도해주세요.")
+    except ValueError:
+        raise HTTPException(status_code=502, detail="AI 응답을 처리하지 못했습니다. 다시 시도해주세요.")
+    except Exception as e:
+        logger.exception("재분석 실패")
+        err_msg = str(e).lower()
+        if any(k in err_msg for k in ["timeout", "deadline"]):
+            raise HTTPException(status_code=504, detail="AI 재분석 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.")
+        raise HTTPException(status_code=500, detail="재분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
 
     # 재분석 결과에도 프레임/GIF 추출
     video = video_repo.get_video(db, job.video_id)
@@ -353,7 +429,7 @@ def submit_feedback(analysis_id: str, body: FeedbackCreate, db: Session = Depend
     new_result = analysis_repo.create_result(
         db=db,
         job_id=job.id,
-        revision=job.current_revision,
+        revision=next_revision,
         summary=new_result_data["summary"],
         result_json=new_result_data,
     )

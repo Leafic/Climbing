@@ -27,5 +27,5 @@ def get_db():
 
 
 def init_db():
-    from app.models.models import User, Video, AnalysisJob, AnalysisResult, AnalysisFeedback  # noqa
+    from app.models.models import User, Video, AnalysisJob, AnalysisResult, AnalysisFeedback, GymProfile  # noqa
     Base.metadata.create_all(bind=engine)

@@ -7,6 +7,8 @@ export interface VideoUploadResponse {
   filename: string;
   duration_seconds: number;
   created_at: string;
+  is_duplicate: boolean;
+  existing_analysis_id: string | null;
 }
 
 export interface AnalysisJobOut {
@@ -68,11 +70,21 @@ export interface AnalysisResultOut {
   created_at: string;
 }
 
+export interface RelatedAnalysisOut {
+  job_id: string;
+  status: string;
+  current_revision: number;
+  summary: string | null;
+  completion_probability: number | null;
+  created_at: string;
+}
+
 export interface AnalysisDetailOut {
   job: AnalysisJobOut;
   latest_result: AnalysisResultOut | null;
   video_filename: string;
   video_duration: number;
+  related_analyses: RelatedAnalysisOut[];
 }
 
 export interface AnalysisHistoryOut {
@@ -152,6 +164,31 @@ export async function submitFeedback(
 export async function getHistory(analysisId: string): Promise<AnalysisHistoryOut> {
   const res = await fetch(`${API_BASE}/api/analysis/${analysisId}/history`);
   if (!res.ok) throw new Error("이력을 불러오지 못했습니다.");
+  return res.json();
+}
+
+// ─── My Analyses ───
+
+export interface MyAnalysisItem {
+  job_id: string;
+  status: string;
+  current_revision: number;
+  video_filename: string;
+  video_duration: number;
+  summary: string | null;
+  attempt_result: string | null;
+  completion_probability: number | null;
+  created_at: string;
+}
+
+export interface MyAnalysesOut {
+  total: number;
+  analyses: MyAnalysisItem[];
+}
+
+export async function getMyAnalyses(deviceId: string): Promise<MyAnalysesOut> {
+  const res = await fetch(`${API_BASE}/api/analysis/device/${deviceId}/list`);
+  if (!res.ok) throw new Error("분석 이력을 불러오지 못했습니다.");
   return res.json();
 }
 
