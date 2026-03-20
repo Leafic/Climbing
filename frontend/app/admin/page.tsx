@@ -156,13 +156,18 @@ export default function AdminPage() {
           {selected.recurring_issues.length > 0 && (
             <div>
               <h4 className="text-sm font-semibold text-gray-700 mb-2">반복 지적 패턴</h4>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 {selected.recurring_issues.map((issue, i) => (
-                  <div key={i} className="bg-red-50 rounded-lg px-3 py-2">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-bold text-red-600">{issue.count}회 반복</span>
+                  <div key={i} className="bg-red-50 rounded-lg px-3 py-3">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-sm font-semibold text-red-700">{issue.category}</span>
+                      <span className="text-xs font-bold text-red-600">{issue.count}회</span>
                     </div>
-                    <p className="text-xs text-red-800 whitespace-pre-wrap">{issue.issue}</p>
+                    {issue.examples?.map((ex: string, j: number) => (
+                      <p key={j} className="text-xs text-red-800 leading-relaxed">
+                        • {ex}
+                      </p>
+                    ))}
                   </div>
                 ))}
               </div>

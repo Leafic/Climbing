@@ -252,7 +252,7 @@ export interface DeviceDetail {
     fail_reason: string | null;
     created_at: string | null;
   }[];
-  recurring_issues: { issue: string; count: number }[];
+  recurring_issues: { category: string; count: number; examples: string[] }[];
 }
 
 export async function getDeviceDetail(deviceId: string): Promise<DeviceDetail> {

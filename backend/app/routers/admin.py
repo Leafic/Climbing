@@ -87,20 +87,60 @@ def get_device_detail(device_id: str, db: Session = Depends(get_db)):
             "created_at": r.created_at.isoformat() if r.created_at else None,
         })
 
-    # 반복 패턴 추출
-    issue_counts: dict[str, int] = {}
+    # 반복 패턴 추출 — 키워드 기반 유사 이슈 그룹핑
+    issue_categories = {
+        "발 위치/풋워크": ["발 위치", "풋워크", "발이 미끄", "발바닥", "발끝", "토", "힐훅", "스미어링", "디딤", "밟"],
+        "무게중심/균형": ["무게중심", "중심", "균형", "골반", "벽에서 멀", "벽에서 떨", "몸이 뒤"],
+        "그립/손 위치": ["그립", "손 위치", "손이 미끄", "잡지 못", "홀드를 잡", "손목"],
+        "체중 이동": ["체중 이동", "체중", "이동", "트랜지션"],
+        "동적 무브": ["다이나믹", "도약", "랜지", "데드포인트", "점프"],
+        "지구력/파워": ["지구력", "파워", "힘이 빠", "펌핑", "전완"],
+        "자세/몸 방향": ["자세", "몸 방향", "회전", "턴", "플래깅", "드롭니"],
+        "루트 리딩": ["루트 리딩", "루트 파악", "경로", "순서"],
+    }
+
+    all_issues: list[str] = []
     for r in history:
         rj = r.result_json if isinstance(r.result_json, dict) else {}
         for obs in (rj.get("keyObservations") or []):
             if isinstance(obs, dict) and obs.get("type") == "issue":
-                text = obs.get("observation", "")[:40]
+                text = obs.get("observation", "")
                 if text:
-                    issue_counts[text] = issue_counts.get(text, 0) + 1
+                    all_issues.append(text)
 
-    top_issues = sorted(issue_counts.items(), key=lambda x: -x[1])[:5]
+    # 카테고리별 매칭
+    category_data: dict[str, dict] = {}
+    for issue_text in all_issues:
+        matched = False
+        for cat_name, keywords in issue_categories.items():
+            if any(kw in issue_text for kw in keywords):
+                if cat_name not in category_data:
+                    category_data[cat_name] = {"count": 0, "examples": []}
+                category_data[cat_name]["count"] += 1
+                if len(category_data[cat_name]["examples"]) < 2:
+                    category_data[cat_name]["examples"].append(issue_text)
+                matched = True
+                break
+        if not matched:
+            cat_name = "기타"
+            if cat_name not in category_data:
+                category_data[cat_name] = {"count": 0, "examples": []}
+            category_data[cat_name]["count"] += 1
+            if len(category_data[cat_name]["examples"]) < 2:
+                category_data[cat_name]["examples"].append(issue_text)
+
+    # 가장 많이 반복되는 카테고리 순으로 정렬
+    top_issues = sorted(category_data.items(), key=lambda x: -x[1]["count"])[:5]
 
     return {
         **stats,
         "analyses": analyses,
-        "recurring_issues": [{"issue": k, "count": v} for k, v in top_issues],
+        "recurring_issues": [
+            {
+                "category": cat,
+                "count": data["count"],
+                "examples": data["examples"],
+            }
+            for cat, data in top_issues
+        ],
     }
