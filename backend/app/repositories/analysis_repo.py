@@ -1,7 +1,6 @@
-from datetime import datetime
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from app.models.models import AnalysisJob, AnalysisResult, AnalysisFeedback, JobStatus
+from app.models.models import AnalysisJob, AnalysisResult, AnalysisFeedback, JobStatus, now_kst
 
 
 def create_job(db: Session, video_id: str, user_id: str = None, device_id: str = None) -> AnalysisJob:
@@ -47,7 +46,7 @@ def get_job(db: Session, job_id: str) -> Optional[AnalysisJob]:
 
 def update_job_status(db: Session, job: AnalysisJob, status: JobStatus) -> AnalysisJob:
     job.status = status
-    job.updated_at = datetime.utcnow()
+    job.updated_at = now_kst()
     db.commit()
     db.refresh(job)
     return job
@@ -55,7 +54,7 @@ def update_job_status(db: Session, job: AnalysisJob, status: JobStatus) -> Analy
 
 def increment_job_revision(db: Session, job: AnalysisJob) -> AnalysisJob:
     job.current_revision += 1
-    job.updated_at = datetime.utcnow()
+    job.updated_at = now_kst()
     db.commit()
     db.refresh(job)
     return job
