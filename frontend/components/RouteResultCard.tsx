@@ -79,6 +79,31 @@ function RouteCard({ route, index }: { route: RouteSuggestion; index: number }) 
 export default function RouteResultCard({ result }: Props) {
   return (
     <div className="flex flex-col gap-4">
+      {/* 루트 표시된 벽 사진 */}
+      {result.routeImageUrl && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-gray-900 px-4 py-2">
+            <p className="text-xs font-bold text-gray-300 uppercase tracking-wider">AI가 분석한 루트 경로</p>
+          </div>
+          <img
+            src={result.routeImageUrl}
+            alt="루트 경로가 표시된 벽 사진"
+            className="w-full object-contain"
+          />
+          <div className="px-4 py-2 bg-gray-50 flex gap-3 flex-wrap">
+            {result.routes.map((route, i) => {
+              const colors = ["bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500", "bg-purple-500"];
+              return (
+                <div key={i} className="flex items-center gap-1.5">
+                  <span className={`w-3 h-3 rounded-full ${colors[i % colors.length]}`} />
+                  <span className="text-xs text-gray-600 font-medium">{route.name} ({route.difficulty})</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 벽 분석 요약 */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">

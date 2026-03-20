@@ -151,10 +151,17 @@ export async function getHistory(analysisId: string): Promise<AnalysisHistoryOut
 
 // ─── Route Analysis ───
 
+export interface HoldPosition {
+  xPct: number;
+  yPct: number;
+  label: string;
+}
+
 export interface RouteSuggestion {
   name: string;
   difficulty: string;
   description: string;
+  holds: HoldPosition[];
   steps: string[];
   approachStrategy: string;
   keyTips: string[];
@@ -168,6 +175,7 @@ export interface RouteAnalysisResult {
   generalAdvice: string;
   confidence: number;
   modelUsed?: string;
+  routeImageUrl?: string;
 }
 
 export async function analyzeRoute(

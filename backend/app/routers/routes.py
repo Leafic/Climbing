@@ -4,6 +4,7 @@ import logging
 from fastapi import APIRouter, File, Form, UploadFile, HTTPException
 
 from app.services.analyzer import get_analyzer
+from app.utils.route_drawer import draw_routes_on_image
 
 logger = logging.getLogger(__name__)
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
@@ -52,11 +53,19 @@ def analyze_route(
             hold_color=hold_color,
             skill_level=skill_level,
         )
+
+        # 루트 경로를 이미지에 그리기
+        routes = result.get("routes", [])
+        if routes:
+            route_image_url = draw_routes_on_image(temp_path, routes)
+            result["routeImageUrl"] = route_image_url
+
         return result
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
         logger.exception("루트 분석 실패")
         raise HTTPException(status_code=500, detail="루트 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
     finally:
-        # 임시 파일 삭제
         if os.path.exists(temp_path):
             os.remove(temp_path)
