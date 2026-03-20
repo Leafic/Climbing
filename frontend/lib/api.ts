@@ -118,7 +118,7 @@ export async function createAnalysis(
   const res = await fetch(`${API_BASE}/api/analysis`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ video_id: videoId, skill_level: skillLevel, attempt_result: attemptResult, device_id: getDeviceId() }),
+    body: JSON.stringify({ video_id: videoId, skill_level: skillLevel, attempt_result: attemptResult, device_id: getDeviceId() || undefined }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

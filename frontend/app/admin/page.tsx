@@ -158,9 +158,9 @@ export default function AdminPage() {
               <h4 className="text-sm font-semibold text-gray-700 mb-2">반복 지적 패턴</h4>
               <div className="flex flex-col gap-1">
                 {selected.recurring_issues.map((issue, i) => (
-                  <div key={i} className="flex items-center justify-between bg-red-50 rounded-lg px-3 py-2">
-                    <span className="text-xs text-red-800 flex-1">{issue.issue}</span>
-                    <span className="text-xs font-bold text-red-600 ml-2">{issue.count}회</span>
+                  <div key={i} className="flex items-start justify-between gap-3 bg-red-50 rounded-lg px-3 py-2">
+                    <span className="text-xs text-red-800 flex-1 min-w-0 break-words">{issue.issue}</span>
+                    <span className="text-xs font-bold text-red-600 shrink-0">{issue.count}회</span>
                   </div>
                 ))}
               </div>
