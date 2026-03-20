@@ -1,8 +1,11 @@
 import os
 import uuid
 import logging
-from fastapi import APIRouter, File, Form, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException
+from sqlalchemy.orm import Session
 
+from app.db import get_db
+from app.repositories import gym_repo
 from app.services.analyzer import get_analyzer
 from app.utils.route_drawer import draw_routes_on_image
 
@@ -17,6 +20,9 @@ def analyze_route(
     file: UploadFile = File(...),
     hold_color: str = Form(...),
     skill_level: str = Form("beginner"),
+    start_hint: str = Form(""),
+    device_id: str = Form(""),
+    db: Session = Depends(get_db),
 ):
     # 이미지 파일 검증
     if not file.content_type or not file.content_type.startswith("image/"):
@@ -47,12 +53,28 @@ def analyze_route(
                     raise HTTPException(status_code=400, detail="이미지 크기가 20MB를 초과합니다.")
                 f.write(chunk)
 
+        # 짐 프로파일에서 컨텍스트 가져오기
+        gym_context = ""
+        if device_id:
+            gym_context = gym_repo.build_context(db, device_id)
+            gym_repo.increment_analysis(db, device_id)
+
+        # start_hint에 짐 프로파일 컨텍스트 병합
+        combined_hint = start_hint.strip()
+        if gym_context:
+            combined_hint = (combined_hint + "\n" + gym_context).strip() if combined_hint else gym_context.strip()
+
         analyzer = get_analyzer()
         result = analyzer.analyze_route(
             image_path=temp_path,
             hold_color=hold_color,
             skill_level=skill_level,
+            start_hint=combined_hint,
         )
+
+        # 루트 시스템 정보 자동 축적
+        if device_id and result.get("routeSystem"):
+            gym_repo.update_route_system(db, device_id, result["routeSystem"])
 
         # 루트 경로를 이미지에 그리기
         routes = result.get("routes", [])

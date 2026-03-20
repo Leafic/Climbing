@@ -30,14 +30,25 @@ export default function RouteFinderPage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [holdColor, setHoldColor] = useState<string>("");
+  const [routeNumber, setRouteNumber] = useState<string>("");
   const [customColor, setCustomColor] = useState<string>("");
+  const [startHint, setStartHint] = useState<string>("");
   const [skillLevel, setSkillLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RouteAnalysisResult | null>(null);
   const [stepIdx, setStepIdx] = useState(0);
 
-  const selectedColor = holdColor === "직접입력" ? customColor : holdColor;
+  // 색상 + 번호 조합으로 hold_color 생성
+  const buildRouteQuery = (): string => {
+    if (holdColor === "직접입력") return customColor.trim();
+    const parts: string[] = [];
+    if (holdColor) parts.push(holdColor);
+    if (routeNumber) parts.push(`${routeNumber}번`);
+    return parts.join(" ") || "";
+  };
+  const selectedColor = buildRouteQuery();
+  const hasSelection = holdColor || routeNumber || (holdColor === "직접입력" && customColor.trim());
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null;
@@ -56,8 +67,8 @@ export default function RouteFinderPage() {
       setError("벽 사진을 선택해주세요.");
       return;
     }
-    if (!selectedColor.trim()) {
-      setError("홀드 색상을 선택해주세요.");
+    if (!selectedColor) {
+      setError("홀드 색상 또는 루트 번호를 선택해주세요.");
       return;
     }
 
@@ -71,7 +82,7 @@ export default function RouteFinderPage() {
     }, 4000);
 
     try {
-      const data = await analyzeRoute(file, selectedColor.trim(), skillLevel);
+      const data = await analyzeRoute(file, selectedColor, skillLevel, startHint.trim() || undefined);
       setResult(data);
     } catch (e: any) {
       setError(e.message);
@@ -111,64 +122,98 @@ export default function RouteFinderPage() {
             )}
           </div>
 
-          {/* 홀드 색상 선택 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              도전할 루트
-            </label>
-            <p className="text-xs text-gray-400 mb-3">
-              홀드 색상 또는 벽에 붙은 번호 스티커(예: 6번)를 선택/입력하세요
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {HOLD_COLORS.map((color) => (
+          {/* 루트 정보 입력 */}
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                도전할 루트
+              </label>
+              <p className="text-xs text-gray-400 mb-3">
+                홀드 색상과 번호를 함께 선택하면 인식률이 올라갑니다
+              </p>
+            </div>
+
+            {/* 홀드 색상 */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">홀드 색상</p>
+              <div className="flex flex-wrap gap-2">
+                {HOLD_COLORS.map((color) => (
+                  <button
+                    key={color.value}
+                    onClick={() => setHoldColor(holdColor === color.value ? "" : color.value)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all text-sm ${
+                      holdColor === color.value
+                        ? `border-gray-900 ring-2 ${color.ring}`
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className={`w-4 h-4 rounded-full shrink-0 ${color.bg}`} />
+                    <span className="text-gray-700 font-medium">{color.value}</span>
+                  </button>
+                ))}
                 <button
-                  key={color.value}
-                  onClick={() => { setHoldColor(color.value); setCustomColor(""); }}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all text-sm ${
-                    holdColor === color.value
-                      ? `border-gray-900 ring-2 ${color.ring}`
+                  onClick={() => { setHoldColor(holdColor === "직접입력" ? "" : "직접입력"); }}
+                  className={`px-3 py-2 rounded-lg border-2 transition-all text-sm ${
+                    holdColor === "직접입력"
+                      ? "border-gray-900 ring-2 ring-gray-400"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <span className={`w-4 h-4 rounded-full shrink-0 ${color.bg}`} />
-                  <span className="text-gray-700 font-medium">{color.value}</span>
+                  <span className="text-gray-700 font-medium">직접입력</span>
                 </button>
-              ))}
-              <button
-                onClick={() => setHoldColor("직접입력")}
-                className={`px-3 py-2 rounded-lg border-2 transition-all text-sm ${
-                  holdColor === "직접입력"
-                    ? "border-gray-900 ring-2 ring-gray-400"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <span className="text-gray-700 font-medium">직접입력</span>
-              </button>
+              </div>
+              {holdColor === "직접입력" && (
+                <input
+                  type="text"
+                  value={customColor}
+                  onChange={(e) => setCustomColor(e.target.value)}
+                  placeholder="색상을 입력하세요 (예: 하늘색, 연두색)"
+                  className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              )}
             </div>
-            <p className="text-xs text-gray-400 mt-3 mb-1">번호 스티커로 루트를 구분하는 짐인 경우:</p>
-            <div className="flex flex-wrap gap-2">
-              {ROUTE_NUMBERS.map((num) => (
-                <button
-                  key={num}
-                  onClick={() => { setHoldColor(`${num}번`); setCustomColor(""); }}
-                  className={`w-10 h-10 rounded-lg border-2 transition-all text-sm font-bold flex items-center justify-center ${
-                    holdColor === `${num}번`
-                      ? "border-gray-900 ring-2 ring-gray-400 bg-gray-100"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
-                  }`}
-                >
-                  {num}
-                </button>
-              ))}
+
+            {/* 루트 번호 */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">루트 번호 (스티커 번호)</p>
+              <div className="flex flex-wrap gap-2">
+                {ROUTE_NUMBERS.map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setRouteNumber(routeNumber === num ? "" : num)}
+                    className={`w-10 h-10 rounded-lg border-2 transition-all text-sm font-bold flex items-center justify-center ${
+                      routeNumber === num
+                        ? "border-gray-900 ring-2 ring-gray-400 bg-gray-100"
+                        : "border-gray-200 hover:border-gray-300 bg-white"
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
             </div>
-            {holdColor === "직접입력" && (
+
+            {/* 시작점 힌트 */}
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-2">시작점 힌트 (선택)</p>
               <input
                 type="text"
-                value={customColor}
-                onChange={(e) => setCustomColor(e.target.value)}
-                placeholder="색상 또는 번호를 입력하세요 (예: 하늘색, 빨간6번)"
-                className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                value={startHint}
+                onChange={(e) => setStartHint(e.target.value)}
+                placeholder="예: 왼쪽 아래 노란 홀드에 빨간 6번 스티커"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
+              <p className="text-xs text-gray-400 mt-1">
+                시작 홀드의 위치나 특징을 알려주면 AI 인식 정확도가 높아집니다
+              </p>
+            </div>
+
+            {/* 선택 요약 */}
+            {selectedColor && (
+              <div className="bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600">
+                AI에게 전달될 정보: <span className="font-semibold text-gray-900">{selectedColor}</span>
+                {startHint && <span> / 시작점: <span className="font-semibold text-gray-900">{startHint}</span></span>}
+              </div>
             )}
           </div>
 
@@ -243,7 +288,7 @@ export default function RouteFinderPage() {
 
           <button
             onClick={handleAnalyze}
-            disabled={loading || !file || !selectedColor.trim()}
+            disabled={loading || !file || !hasSelection}
             className="bg-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? "분석 중..." : "🗺️ 루트 분석 시작"}
@@ -257,7 +302,7 @@ export default function RouteFinderPage() {
           <RouteResultCard result={result} />
           <div className="flex justify-center">
             <button
-              onClick={() => { setResult(null); setFile(null); setPreview(null); setHoldColor(""); }}
+              onClick={() => { setResult(null); setFile(null); setPreview(null); setHoldColor(""); setRouteNumber(""); setStartHint(""); }}
               className="text-sm text-emerald-600 underline"
             >
               다른 벽 분석하기

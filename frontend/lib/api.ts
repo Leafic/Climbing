@@ -187,12 +187,16 @@ export interface RouteAnalysisResult {
 export async function analyzeRoute(
   file: File,
   holdColor: string,
-  skillLevel: string = "beginner"
+  skillLevel: string = "beginner",
+  startHint?: string
 ): Promise<RouteAnalysisResult> {
   const form = new FormData();
   form.append("file", file);
   form.append("hold_color", holdColor);
   form.append("skill_level", skillLevel);
+  if (startHint) form.append("start_hint", startHint);
+  const deviceId = getDeviceId();
+  if (deviceId) form.append("device_id", deviceId);
 
   const res = await fetch(`${API_BASE}/api/routes/analyze`, {
     method: "POST",

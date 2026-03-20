@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models.models import JobStatus
-from app.repositories import analysis_repo, video_repo
+from app.repositories import analysis_repo, video_repo, gym_repo
 from app.schemas.analysis import (
     AnalysisJobCreate,
     AnalysisJobOut,
@@ -97,6 +97,41 @@ def _enrich_with_media(result_data: dict, video_path: str, video_id: str) -> dic
 
     return result_data
 
+def _extract_and_save_corrections(db: Session, device_id: str, feedback_text: str):
+    """피드백 텍스트에서 색상/좌우/동작 보정 패턴을 추출하여 짐 프로파일에 저장"""
+    text = feedback_text.lower()
+    corrections = []
+
+    # 색상 보정 키워드
+    color_keywords = ["색상", "색깔", "색이", "색은", "노란", "빨간", "파란", "초록", "주황", "보라",
+                       "분홍", "검정", "흰", "하늘", "연두"]
+    correction_keywords = ["아니", "틀", "잘못", "아닌데", "가 아니라", "이 아니라", "다른 색"]
+    if any(ck in text for ck in color_keywords) and any(ck in text for ck in correction_keywords):
+        corrections.append({"type": "color", "note": feedback_text[:100]})
+
+    # 좌우 보정
+    lr_keywords = ["왼손", "오른손", "왼발", "오른발", "왼쪽", "오른쪽"]
+    if any(lk in text for lk in lr_keywords) and any(ck in text for ck in correction_keywords):
+        corrections.append({"type": "direction", "note": feedback_text[:100]})
+
+    # 동작 보정 (다이나믹 등)
+    move_keywords = ["다이나믹", "정적", "랜지", "스태틱"]
+    if any(mk in text for mk in move_keywords) and any(ck in text for ck in correction_keywords):
+        corrections.append({"type": "move_type", "note": feedback_text[:100]})
+
+    # 홀드 인식 보정
+    hold_keywords = ["홀드", "스티커", "번호", "루트", "테이프"]
+    if any(hk in text for hk in hold_keywords) and any(ck in text for ck in correction_keywords):
+        corrections.append({"type": "hold_recognition", "note": feedback_text[:100]})
+
+    # 패턴이 감지되지 않아도, 피드백 자체를 일반 보정으로 저장 (중요한 정보일 수 있음)
+    if not corrections:
+        corrections.append({"type": "general", "note": feedback_text[:100]})
+
+    for c in corrections:
+        gym_repo.add_correction(db, device_id, c)
+
+
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
 
@@ -110,8 +145,14 @@ def create_analysis(body: AnalysisJobCreate, db: Session = Depends(get_db)):
     analysis_repo.update_job_status(db, job, JobStatus.processing)
 
     try:
-        # 이전 분석 이력 컨텍스트 생성
+        # 이전 분석 이력 + 짐 프로파일 컨텍스트 생성
         history_context = _build_history_context(db, body.device_id, current_job_id=job.id)
+        gym_context = gym_repo.build_context(db, body.device_id) if body.device_id else ""
+        full_memo = (history_context + gym_context).strip() or None
+
+        # 짐 프로파일 분석 카운트 증가
+        if body.device_id:
+            gym_repo.increment_analysis(db, body.device_id)
 
         analyzer = get_analyzer()
         result_data = analyzer.analyze(
@@ -119,7 +160,7 @@ def create_analysis(body: AnalysisJobCreate, db: Session = Depends(get_db)):
             video_path=video.file_path,
             skill_level=body.skill_level or "beginner",
             attempt_result=body.attempt_result or "failure",
-            memo=history_context if history_context else None,
+            memo=full_memo,
         )
 
         # 관찰 포인트 프레임 + 실패 구간 GIF 추출
@@ -177,6 +218,10 @@ def submit_feedback(analysis_id: str, body: FeedbackCreate, db: Session = Depend
         revision_from=job.current_revision,
         feedback_text=body.feedback_text,
     )
+
+    # 짐 프로파일에 피드백 보정사항 축적
+    if job.device_id:
+        _extract_and_save_corrections(db, job.device_id, body.feedback_text)
 
     analyzer = get_analyzer()
     new_result_data = analyzer.reanalyze(

@@ -96,3 +96,21 @@ class AnalysisFeedback(Base):
     created_at = Column(DateTime, default=now_kst)
 
     job = relationship("AnalysisJob", back_populates="feedbacks")
+
+
+class GymProfile(Base):
+    """디바이스별 짐 특성 자동 축적 — 분석할수록 인식률 향상"""
+    __tablename__ = "gym_profiles"
+
+    id = Column(String(36), primary_key=True, default=make_uuid)
+    device_id = Column(String(64), unique=True, nullable=False, index=True)
+    # 짐 기본 정보
+    route_system = Column(String(20), nullable=True)        # sticker / color / tape
+    lighting_note = Column(String(255), nullable=True)       # 조명 특성
+    # 축적된 보정 사항 (JSON 배열)
+    corrections = Column(JSON, default=list)                 # [{"type":"color","note":"노란홀드를 초록으로 잘못인식"}, ...]
+    # 통계
+    analysis_count = Column(Integer, default=0)
+    feedback_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=now_kst)
+    updated_at = Column(DateTime, default=now_kst, onupdate=now_kst)
