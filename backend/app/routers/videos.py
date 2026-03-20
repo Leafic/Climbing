@@ -15,6 +15,7 @@ ALLOWED_EXTENSIONS = {".mp4", ".mov", ".avi", ".webm"}
 def upload_video(
     file: UploadFile = File(...),
     duration_seconds: float = Form(...),
+    device_id: str = Form(None),
     db: Session = Depends(get_db),
 ):
     import os
@@ -36,5 +37,6 @@ def upload_video(
         filename=file.filename,
         file_path=file_path,
         duration_seconds=duration_seconds,
+        device_id=device_id,
     )
     return video

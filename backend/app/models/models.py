@@ -39,6 +39,7 @@ class Video(Base):
 
     id = Column(String(36), primary_key=True, default=make_uuid)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    device_id = Column(String(64), nullable=True, index=True)
     filename = Column(String(255), nullable=False)
     file_path = Column(String(512), nullable=False)
     duration_seconds = Column(Float, nullable=False)
@@ -53,6 +54,7 @@ class AnalysisJob(Base):
 
     id = Column(String(36), primary_key=True, default=make_uuid)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    device_id = Column(String(64), nullable=True, index=True)
     video_id = Column(String(36), ForeignKey("videos.id"), nullable=False)
     status = Column(SAEnum(JobStatus), default=JobStatus.queued, nullable=False)
     current_revision = Column(Integer, default=0, nullable=False)

@@ -29,7 +29,7 @@ export default function RouteFinderPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [holdColor, setHoldColor] = useState<string>("");
   const [customColor, setCustomColor] = useState<string>("");
-  const [skillLevel, setSkillLevel] = useState<"beginner" | "expert">("beginner");
+  const [skillLevel, setSkillLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RouteAnalysisResult | null>(null);
@@ -156,24 +156,24 @@ export default function RouteFinderPage() {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               숙련도
             </label>
-            <div className="grid grid-cols-2 gap-3">
-              {(["beginner", "expert"] as const).map((level) => (
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {([
+                { value: "beginner" as const, icon: "🧗", label: "입문", desc: "상세 스텝 설명" },
+                { value: "intermediate" as const, icon: "💪", label: "중급", desc: "실전 무브 중심" },
+                { value: "advanced" as const, icon: "🏆", label: "상급", desc: "핵심만 간결" },
+              ]).map((level) => (
                 <button
-                  key={level}
-                  onClick={() => setSkillLevel(level)}
-                  className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl border-2 transition-all ${
-                    skillLevel === level
+                  key={level.value}
+                  onClick={() => setSkillLevel(level.value)}
+                  className={`flex flex-col items-center gap-1 px-2 sm:px-4 py-3 rounded-xl border-2 transition-all ${
+                    skillLevel === level.value
                       ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                       : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                   }`}
                 >
-                  <span className="text-xl">{level === "beginner" ? "🧗" : "🏆"}</span>
-                  <span className="text-sm font-semibold">
-                    {level === "beginner" ? "초보자" : "숙련자"}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {level === "beginner" ? "상세한 스텝 설명" : "핵심만 간결하게"}
-                  </span>
+                  <span className="text-xl">{level.icon}</span>
+                  <span className="text-sm font-semibold">{level.label}</span>
+                  <span className="text-[10px] sm:text-xs text-gray-400 text-center leading-tight">{level.desc}</span>
                 </button>
               ))}
             </div>

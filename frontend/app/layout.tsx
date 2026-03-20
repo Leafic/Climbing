@@ -33,9 +33,12 @@ export default function RootLayout({
       </head>
       <body className="bg-gray-50 min-h-screen text-gray-900">
         <header className="bg-white border-b border-gray-200 px-4 py-3">
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
             <a href="/" className="text-lg font-bold text-blue-600">
               🧗 ClimbAI
+            </a>
+            <a href="/admin" className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors">
+              dev
             </a>
           </div>
         </header>

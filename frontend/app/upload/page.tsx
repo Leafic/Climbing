@@ -16,7 +16,7 @@ export default function UploadPage() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<string>("");
-  const [skillLevel, setSkillLevel] = useState<"beginner" | "expert">("beginner");
+  const [skillLevel, setSkillLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
   const [attemptResult, setAttemptResult] = useState<"failure" | "success">("failure");
   const [videoId, setVideoId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,10 +68,11 @@ export default function UploadPage() {
     setLoading(true);
     try {
       const job = await createAnalysis(videoId, skillLevel, attemptResult);
+      // 성공 시 바로 이동 — finally에서 상태 초기화하지 않음
       router.push(`/analysis/${job.id}`);
+      return;
     } catch (e: any) {
       setError(e.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -155,24 +156,24 @@ export default function UploadPage() {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               숙련도
             </label>
-            <div className="grid grid-cols-2 gap-3">
-              {(["beginner", "expert"] as const).map((level) => (
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {([
+                { value: "beginner" as const, icon: "🧗", label: "입문", desc: "기본기 중심 코칭" },
+                { value: "intermediate" as const, icon: "💪", label: "중급", desc: "무브 효율 + 전략" },
+                { value: "advanced" as const, icon: "🏆", label: "상급", desc: "핵심만 압축" },
+              ]).map((level) => (
                 <button
-                  key={level}
-                  onClick={() => setSkillLevel(level)}
-                  className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl border-2 transition-all ${
-                    skillLevel === level
+                  key={level.value}
+                  onClick={() => setSkillLevel(level.value)}
+                  className={`flex flex-col items-center gap-1 px-2 sm:px-4 py-3 rounded-xl border-2 transition-all ${
+                    skillLevel === level.value
                       ? "border-blue-500 bg-blue-50 text-blue-700"
                       : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                   }`}
                 >
-                  <span className="text-xl">{level === "beginner" ? "🧗" : "🏆"}</span>
-                  <span className="text-sm font-semibold">
-                    {level === "beginner" ? "초보자" : "숙련자"}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    {level === "beginner" ? "4단계 상세 코칭" : "핵심 2가지 압축"}
-                  </span>
+                  <span className="text-xl">{level.icon}</span>
+                  <span className="text-sm font-semibold">{level.label}</span>
+                  <span className="text-[10px] sm:text-xs text-gray-400 text-center leading-tight">{level.desc}</span>
                 </button>
               ))}
             </div>
@@ -202,7 +203,7 @@ export default function UploadPage() {
               <p className="font-semibold text-gray-900">업로드 완료</p>
               <p className="text-sm text-gray-500">
                 {attemptResult === "success" ? "✅ 완등 성공" : "❌ 실패"} ·{" "}
-                {skillLevel === "beginner" ? "초보자" : "숙련자"} 모드로 분석합니다.
+                {{ beginner: "입문", intermediate: "중급", advanced: "상급" }[skillLevel]} 모드로 분석합니다.
               </p>
             </div>
           </div>

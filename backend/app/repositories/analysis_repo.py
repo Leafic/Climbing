@@ -4,12 +4,41 @@ from sqlalchemy.orm import Session
 from app.models.models import AnalysisJob, AnalysisResult, AnalysisFeedback, JobStatus
 
 
-def create_job(db: Session, video_id: str, user_id: str = None) -> AnalysisJob:
-    job = AnalysisJob(video_id=video_id, user_id=user_id, status=JobStatus.queued)
+def create_job(db: Session, video_id: str, user_id: str = None, device_id: str = None) -> AnalysisJob:
+    job = AnalysisJob(video_id=video_id, user_id=user_id, device_id=device_id, status=JobStatus.queued)
     db.add(job)
     db.commit()
     db.refresh(job)
     return job
+
+
+def get_device_history(db: Session, device_id: str, limit: int = 10) -> List[AnalysisResult]:
+    """해당 디바이스의 최근 완료된 분석 결과를 조회 (최신순)"""
+    return (
+        db.query(AnalysisResult)
+        .join(AnalysisJob, AnalysisResult.analysis_job_id == AnalysisJob.id)
+        .filter(AnalysisJob.device_id == device_id, AnalysisJob.status == JobStatus.completed)
+        .order_by(AnalysisResult.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+def get_device_stats(db: Session, device_id: str) -> dict:
+    """디바이스별 통계"""
+    from sqlalchemy import func
+    jobs = db.query(AnalysisJob).filter(AnalysisJob.device_id == device_id)
+    total = jobs.count()
+    completed = jobs.filter(AnalysisJob.status == JobStatus.completed).count()
+    first_seen = db.query(func.min(AnalysisJob.created_at)).filter(AnalysisJob.device_id == device_id).scalar()
+    last_seen = db.query(func.max(AnalysisJob.created_at)).filter(AnalysisJob.device_id == device_id).scalar()
+    return {
+        "device_id": device_id,
+        "total_analyses": total,
+        "completed_analyses": completed,
+        "first_seen": first_seen.isoformat() if first_seen else None,
+        "last_seen": last_seen.isoformat() if last_seen else None,
+    }
 
 
 def get_job(db: Session, job_id: str) -> Optional[AnalysisJob]:

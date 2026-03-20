@@ -30,9 +30,9 @@ function FeedbackList({ items, label }: { items: string[]; label: string }) {
 
 function KeyObservationsSection({ observations }: { observations: KeyObservation[] }) {
   const typeConfig = {
-    issue: { dot: "bg-red-500", badge: "bg-red-900/40 text-red-300", label: "문제" },
-    good:  { dot: "bg-green-400", badge: "bg-green-900/40 text-green-300", label: "잘됨" },
-    note:  { dot: "bg-gray-500", badge: "bg-gray-700 text-gray-300", label: "참고" },
+    issue: { dot: "bg-red-500", badge: "bg-red-900/40 text-red-300", label: "문제", border: "border-red-800/30" },
+    good:  { dot: "bg-green-400", badge: "bg-green-900/40 text-green-300", label: "잘됨", border: "border-green-800/30" },
+    note:  { dot: "bg-gray-500", badge: "bg-gray-700 text-gray-300", label: "참고", border: "border-gray-700/30" },
   };
 
   return (
@@ -51,7 +51,7 @@ function KeyObservationsSection({ observations }: { observations: KeyObservation
               </div>
 
               {/* 내용 */}
-              <div className={`pb-4 flex-1 ${isLast ? "" : ""}`}>
+              <div className={`pb-4 flex-1`}>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-mono text-sm font-bold text-white bg-gray-800 px-2 py-0.5 rounded">
                     {formatTime(obs.timeSec)}
@@ -60,7 +60,18 @@ function KeyObservationsSection({ observations }: { observations: KeyObservation
                     {cfg.label}
                   </span>
                 </div>
-                <p className="text-sm text-gray-300 leading-relaxed">{obs.observation}</p>
+                {obs.frameUrl ? (
+                  <div className={`mt-2 rounded-lg overflow-hidden border ${cfg.border} bg-gray-800`}>
+                    <img
+                      src={obs.frameUrl}
+                      alt={`${formatTime(obs.timeSec)} 캡처`}
+                      className="w-full max-h-40 object-cover"
+                    />
+                    <p className="text-sm text-gray-300 leading-relaxed p-3">{obs.observation}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-300 leading-relaxed">{obs.observation}</p>
+                )}
               </div>
             </div>
           );
@@ -72,7 +83,12 @@ function KeyObservationsSection({ observations }: { observations: KeyObservation
 
 export default function AnalysisResultCard({ result, isLatest }: Props) {
   const r: AnalysisResultJSON = result.result_json;
-  const isExpert = r.skillLevel === "expert";
+  const skillLabels: Record<string, { icon: string; text: string }> = {
+    beginner: { icon: "🧗", text: "입문" },
+    intermediate: { icon: "💪", text: "중급" },
+    advanced: { icon: "🏆", text: "상급" },
+  };
+  const skill = skillLabels[r.skillLevel || "beginner"] || skillLabels.beginner;
   const isSuccess = r.attemptResult === "success";
 
   return (
@@ -94,7 +110,7 @@ export default function AnalysisResultCard({ result, isLatest }: Props) {
           <div className="flex gap-2 flex-wrap">
             {r.skillLevel && (
               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full font-medium">
-                {isExpert ? "🏆 숙련자" : "🧗 초보자"}
+                {skill.icon} {skill.text}
               </span>
             )}
             {r.userFeedbackApplied && (
@@ -156,7 +172,19 @@ export default function AnalysisResultCard({ result, isLatest }: Props) {
         <div>
           <h4 className="text-sm font-semibold text-gray-700 mb-1">실패 구간</h4>
           <div className="bg-orange-50 border border-orange-100 rounded-lg overflow-hidden">
-            {r.failFrameUrl && (
+            {r.failGifUrl ? (
+              <div className="relative">
+                <img
+                  src={r.failGifUrl}
+                  alt="실패 구간 GIF"
+                  className="w-full object-cover max-h-56"
+                />
+                <span className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                  {r.failSegment.startSec}초 ~ {r.failSegment.endSec}초
+                </span>
+              </div>
+            ) : r.failFrameUrl ? (
               <div className="relative">
                 <img
                   src={r.failFrameUrl}
@@ -167,7 +195,7 @@ export default function AnalysisResultCard({ result, isLatest }: Props) {
                   {r.failSegment.startSec}초
                 </span>
               </div>
-            )}
+            ) : null}
             <div className="px-4 py-3">
               <p className="text-xs text-orange-600 font-medium mb-1">
                 {r.failSegment.startSec}초 ~ {r.failSegment.endSec}초
@@ -195,7 +223,7 @@ export default function AnalysisResultCard({ result, isLatest }: Props) {
       {r.coachingSuggestions && r.coachingSuggestions.length > 0 && (
         <div>
           <h4 className="text-sm font-semibold text-gray-700 mb-2">
-            🧗‍♂️ {isSuccess ? "더 높은 수준을 위한 코칭" : "맞춤형 코칭 제안"}
+            🧗‍♂️ {isSuccess ? "더 높은 수준을 위한 코칭" : `${skill.text} 맞춤 코칭`}
           </h4>
           <div className="flex flex-col gap-2">
             {r.coachingSuggestions.map((item: CoachingItem, i: number) => (

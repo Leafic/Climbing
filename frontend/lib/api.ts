@@ -1,3 +1,5 @@
+import { getDeviceId } from "./device";
+
 const API_BASE = "";
 
 export interface VideoUploadResponse {
@@ -26,6 +28,7 @@ export interface KeyObservation {
   timeSec: number;
   observation: string;
   type: "issue" | "good" | "note";
+  frameUrl?: string | null;
 }
 
 export interface CoachingItem {
@@ -40,6 +43,7 @@ export interface AnalysisResultJSON {
   failReason?: string | null;
   failSegment?: FailSegment | null;
   failFrameUrl?: string | null;
+  failGifUrl?: string | null;
   successHighlights?: string[] | null;
   keyObservations?: KeyObservation[] | null;
   coachingSuggestions?: CoachingItem[];
@@ -92,6 +96,8 @@ export async function uploadVideo(
   const form = new FormData();
   form.append("file", file);
   form.append("duration_seconds", String(durationSeconds));
+  const deviceId = getDeviceId();
+  if (deviceId) form.append("device_id", deviceId);
 
   const res = await fetch(`${API_BASE}/api/videos/upload`, {
     method: "POST",
@@ -112,7 +118,7 @@ export async function createAnalysis(
   const res = await fetch(`${API_BASE}/api/analysis`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ video_id: videoId, skill_level: skillLevel, attempt_result: attemptResult }),
+    body: JSON.stringify({ video_id: videoId, skill_level: skillLevel, attempt_result: attemptResult, device_id: getDeviceId() }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -196,5 +202,57 @@ export async function analyzeRoute(
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || "루트 분석 실패");
   }
+  return res.json();
+}
+
+// ─── Admin / Device Tracking ───
+
+export interface DeviceInfo {
+  device_id: string;
+  total_analyses: number;
+  completed_analyses: number;
+  videos_uploaded: number;
+  first_seen: string | null;
+  last_seen: string | null;
+}
+
+export interface DevicesResponse {
+  summary: {
+    total_devices: number;
+    total_analyses: number;
+    identified_analyses: number;
+    anonymous_analyses: number;
+  };
+  devices: DeviceInfo[];
+}
+
+export async function getDevices(): Promise<DevicesResponse> {
+  const res = await fetch(`${API_BASE}/api/admin/devices`);
+  if (!res.ok) throw new Error("디바이스 목록 조회 실패");
+  return res.json();
+}
+
+export interface DeviceDetail {
+  device_id: string;
+  total_analyses: number;
+  completed_analyses: number;
+  first_seen: string | null;
+  last_seen: string | null;
+  analyses: {
+    job_id: string;
+    revision: number;
+    attempt_result: string | null;
+    skill_level: string | null;
+    completion_probability: number | null;
+    summary: string;
+    fail_reason: string | null;
+    created_at: string | null;
+  }[];
+  recurring_issues: { issue: string; count: number }[];
+}
+
+export async function getDeviceDetail(deviceId: string): Promise<DeviceDetail> {
+  const res = await fetch(`${API_BASE}/api/admin/devices/${deviceId}`);
+  if (!res.ok) throw new Error("디바이스 상세 조회 실패");
   return res.json();
 }

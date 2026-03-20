@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 from app.db import init_db
-from app.routers import videos, analysis, routes
+from app.routers import videos, analysis, routes, admin
 
 load_dotenv()
 
@@ -24,6 +24,7 @@ app.add_middleware(
 app.include_router(videos.router)
 app.include_router(analysis.router)
 app.include_router(routes.router)
+app.include_router(admin.router)
 
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)

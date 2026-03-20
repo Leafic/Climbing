@@ -10,6 +10,7 @@ import {
   AnalysisHistoryOut,
 } from "@/lib/api";
 import AnalysisResultCard from "@/components/AnalysisResultCard";
+import TrendChart from "@/components/TrendChart";
 
 export default function AnalysisPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -27,6 +28,11 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
     try {
       const data = await getAnalysis(id);
       setDetail(data);
+      // 아직 처리 중이면 2초 후 재시도
+      if (data.job.status === "processing") {
+        setTimeout(() => fetchData(), 2000);
+        return; // loading 유지
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -47,6 +53,13 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
   useEffect(() => {
     fetchData();
   }, [id]);
+
+  // revision > 0이면 자동으로 이력 로드 (추이 그래프 표시)
+  useEffect(() => {
+    if (detail && detail.job.current_revision > 0 && !history) {
+      fetchHistory();
+    }
+  }, [detail]);
 
   const handleFeedbackSubmit = async () => {
     if (!feedback.trim()) return;
@@ -115,6 +128,11 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center text-sm text-yellow-700">
           아직 분석 결과가 없습니다.
         </div>
+      )}
+
+      {/* 개선 추이 그래프 */}
+      {showHistory && history && history.results.length >= 2 && (
+        <TrendChart results={history.results} />
       )}
 
       {/* Feedback Section */}

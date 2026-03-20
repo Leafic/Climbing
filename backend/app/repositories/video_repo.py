@@ -3,12 +3,13 @@ from sqlalchemy.orm import Session
 from app.models.models import Video
 
 
-def create_video(db: Session, filename: str, file_path: str, duration_seconds: float, user_id: str = None) -> Video:
+def create_video(db: Session, filename: str, file_path: str, duration_seconds: float, user_id: str = None, device_id: str = None) -> Video:
     video = Video(
         filename=filename,
         file_path=file_path,
         duration_seconds=duration_seconds,
         user_id=user_id,
+        device_id=device_id,
     )
     db.add(video)
     db.commit()

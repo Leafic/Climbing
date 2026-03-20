@@ -23,5 +23,11 @@ frontend/.env.local
 .DS_Store
 Thumbs.db
 
+# Claude Code (개인 설정)
+.claude/settings.local.json
+
+# Build cache
+frontend/tsconfig.tsbuildinfo
+
 # 시크릿 (절대 커밋 금지)
 .env

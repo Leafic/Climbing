@@ -47,6 +47,7 @@ class AnalysisJobCreate(BaseModel):
     skill_level: Optional[str] = "beginner"
     attempt_result: Optional[str] = "failure"
     user_id: Optional[str] = None
+    device_id: Optional[str] = None
 
 
 class AnalysisJobOut(BaseModel):
