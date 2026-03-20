@@ -74,7 +74,6 @@ export default function UploadPage() {
     setLoading(true);
     try {
       const job = await createAnalysis(videoId, skillLevel, attemptResult);
-      // 성공 시 바로 이동 — finally에서 상태 초기화하지 않음
       router.push(`/analysis/${job.id}`);
       return;
     } catch (e: any) {
@@ -84,119 +83,119 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-2xl font-bold mb-1">영상 업로드</h1>
         <p className="text-gray-500 text-sm">30초~3분 이내 클라이밍 영상을 업로드해주세요.</p>
       </div>
 
       {step === "upload" && (
-        <details className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-          <summary className="text-sm font-medium text-blue-700 cursor-pointer">
-            촬영 팁 보기
-          </summary>
-          <ul className="mt-2 text-xs text-blue-600 flex flex-col gap-1.5 pl-1">
-            <li>- 벽 전체가 보이도록 정면에서 촬영</li>
-            <li>- 클라이머의 손발이 잘 보이는 각도 유지</li>
-            <li>- 가로(횡) 모드 촬영 권장</li>
-            <li>- 조명이 밝을수록 분석 정확도 향상</li>
-            <li>- 한 시도(출발~완등/낙하)만 포함</li>
-          </ul>
-        </details>
-      )}
+        <>
+          <details className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+            <summary className="text-sm font-medium text-blue-700 cursor-pointer">
+              촬영 팁 보기
+            </summary>
+            <ul className="mt-2 text-xs text-blue-600 flex flex-col gap-1.5 pl-1">
+              <li>- 벽 전체가 보이도록 정면에서 촬영</li>
+              <li>- 클라이머의 손발이 잘 보이는 각도 유지</li>
+              <li>- 가로(횡) 모드 촬영 권장</li>
+              <li>- 조명이 밝을수록 분석 정확도 향상</li>
+              <li>- 한 시도(출발~완등/낙하)만 포함</li>
+            </ul>
+          </details>
 
-      {step === "upload" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 flex flex-col gap-4 sm:gap-5">
-          {/* 파일 선택 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              영상 파일 선택
-            </label>
-            <input
-              type="file"
-              accept="video/*"
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                setFile(f);
-                setDuration("");
-                if (f) {
-                  const url = URL.createObjectURL(f);
-                  const v = document.createElement("video");
-                  v.preload = "metadata";
-                  v.onloadedmetadata = () => {
-                    setDuration(String(Math.round(v.duration)));
-                    URL.revokeObjectURL(url);
-                  };
-                  v.src = url;
-                }
-              }}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            />
-            {file && (
-              <p className="mt-1 text-xs text-gray-400">
-                {file.name}{duration ? ` · ${duration}초` : " · 길이 감지 중..."}
-              </p>
-            )}
-          </div>
-
-          {/* 시도 결과 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              이번 시도 결과
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setAttemptResult("failure")}
-                className={`flex flex-col items-center gap-1 px-4 py-4 rounded-xl border-2 transition-all ${
-                  attemptResult === "failure"
-                    ? "border-red-400 bg-red-50 text-red-700"
-                    : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
-                }`}
-              >
-                <span className="text-2xl">❌</span>
-                <span className="text-sm font-semibold">실패</span>
-                <span className="text-xs text-gray-400">다음 성공 전략 분석</span>
-              </button>
-              <button
-                onClick={() => setAttemptResult("success")}
-                className={`flex flex-col items-center gap-1 px-4 py-4 rounded-xl border-2 transition-all ${
-                  attemptResult === "success"
-                    ? "border-green-400 bg-green-50 text-green-700"
-                    : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
-                }`}
-              >
-                <span className="text-2xl">✅</span>
-                <span className="text-sm font-semibold">성공 (완등)</span>
-                <span className="text-xs text-gray-400">기술 완성도 + 개선 방향</span>
-              </button>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 flex flex-col gap-4">
+            {/* 파일 선택 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                영상 파일 선택
+              </label>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setFile(f);
+                  setDuration("");
+                  if (f) {
+                    const url = URL.createObjectURL(f);
+                    const v = document.createElement("video");
+                    v.preload = "metadata";
+                    v.onloadedmetadata = () => {
+                      setDuration(String(Math.round(v.duration)));
+                      URL.revokeObjectURL(url);
+                    };
+                    v.src = url;
+                  }
+                }}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+              {file && (
+                <p className="mt-1 text-xs text-gray-400">
+                  {file.name}{duration ? ` · ${duration}초` : " · 길이 감지 중..."}
+                </p>
+              )}
             </div>
-          </div>
 
-          {/* 숙련도 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              숙련도
-            </label>
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              {([
-                { value: "beginner" as const, icon: "🧗", label: "입문", desc: "기본기 중심 코칭" },
-                { value: "intermediate" as const, icon: "💪", label: "중급", desc: "무브 효율 + 전략" },
-                { value: "advanced" as const, icon: "🏆", label: "상급", desc: "핵심만 압축" },
-              ]).map((level) => (
+            {/* 시도 결과 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                이번 시도 결과
+              </label>
+              <div className="grid grid-cols-2 gap-2">
                 <button
-                  key={level.value}
-                  onClick={() => setSkillLevel(level.value)}
-                  className={`flex flex-col items-center gap-1.5 px-2 sm:px-4 py-4 rounded-xl border-2 transition-all min-h-[80px] ${
-                    skillLevel === level.value
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
-                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                  onClick={() => setAttemptResult("failure")}
+                  className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl border-2 transition-all ${
+                    attemptResult === "failure"
+                      ? "border-red-400 bg-red-50 text-red-700"
+                      : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
                   }`}
                 >
-                  <span className="text-xl">{level.icon}</span>
-                  <span className="text-sm font-semibold">{level.label}</span>
-                  <span className="text-xs text-gray-400 text-center leading-tight">{level.desc}</span>
+                  <span className="text-xl">❌</span>
+                  <span className="text-sm font-semibold">실패</span>
+                  <span className="text-[11px] text-gray-400">다음 성공 전략 분석</span>
                 </button>
-              ))}
+                <button
+                  onClick={() => setAttemptResult("success")}
+                  className={`flex flex-col items-center gap-1 px-3 py-3 rounded-xl border-2 transition-all ${
+                    attemptResult === "success"
+                      ? "border-green-400 bg-green-50 text-green-700"
+                      : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                  }`}
+                >
+                  <span className="text-xl">✅</span>
+                  <span className="text-sm font-semibold">성공 (완등)</span>
+                  <span className="text-[11px] text-gray-400">기술 완성도 + 개선 방향</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 숙련도 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                숙련도
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: "beginner" as const, icon: "🧗", label: "입문", desc: "기본기 중심" },
+                  { value: "intermediate" as const, icon: "💪", label: "중급", desc: "무브 효율" },
+                  { value: "advanced" as const, icon: "🏆", label: "상급", desc: "핵심 압축" },
+                ]).map((level) => (
+                  <button
+                    key={level.value}
+                    onClick={() => setSkillLevel(level.value)}
+                    className={`flex flex-col items-center gap-1 px-2 py-3 rounded-xl border-2 transition-all ${
+                      skillLevel === level.value
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className="text-lg">{level.icon}</span>
+                    <span className="text-sm font-semibold">{level.label}</span>
+                    <span className="text-[11px] text-gray-400">{level.desc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -206,14 +205,17 @@ export default function UploadPage() {
             </div>
           )}
 
-          <button
-            onClick={handleUpload}
-            disabled={loading || !file || !duration}
-            className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? "업로드 중..." : "업로드"}
-          </button>
-        </div>
+          {/* 업로드 버튼 — 항상 보이도록 sticky */}
+          <div className="sticky bottom-0 bg-gray-50 pt-2 pb-3">
+            <button
+              onClick={handleUpload}
+              disabled={loading || !file || !duration}
+              className="w-full bg-blue-600 text-white px-6 py-3.5 rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? "업로드 중..." : "업로드"}
+            </button>
+          </div>
+        </>
       )}
 
       {step === "duplicate" && (
@@ -266,7 +268,6 @@ export default function UploadPage() {
 
           {loading && (
             <div className="flex flex-col gap-3 py-2">
-              {/* 단계 목록 */}
               <div className="flex flex-col gap-2">
                 {ANALYSIS_STEPS.map((s, i) => {
                   const isDone = i < analysisStepIdx;
@@ -290,7 +291,6 @@ export default function UploadPage() {
                 })}
               </div>
 
-              {/* 프로그레스 바 */}
               <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                 <div
                   className="h-2 rounded-full bg-blue-500 transition-all duration-700"

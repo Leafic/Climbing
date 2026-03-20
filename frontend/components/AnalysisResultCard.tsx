@@ -1,8 +1,58 @@
+"use client";
+
+import { useState, useCallback, useEffect } from "react";
 import { AnalysisResultJSON, AnalysisResultOut, KeyObservation, CoachingItem } from "@/lib/api";
 
 interface Props {
   result: AnalysisResultOut;
   isLatest?: boolean;
+}
+
+function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl font-light z-10 w-10 h-10 flex items-center justify-center"
+      >
+        ×
+      </button>
+      <img
+        src={src}
+        alt={alt}
+        className="max-w-full max-h-full object-contain rounded-lg"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  );
+}
+
+function ZoomableImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <img
+        src={src}
+        alt={alt}
+        className={`${className || ""} cursor-zoom-in active:opacity-80 transition-opacity`}
+        onClick={() => setOpen(true)}
+      />
+      {open && <ImageLightbox src={src} alt={alt} onClose={() => setOpen(false)} />}
+    </>
+  );
 }
 
 function formatTime(sec: number): string {
@@ -62,7 +112,7 @@ function KeyObservationsSection({ observations }: { observations: KeyObservation
                 </div>
                 {obs.frameUrl ? (
                   <div className={`mt-2 rounded-lg overflow-hidden border ${cfg.border} bg-gray-800`}>
-                    <img
+                    <ZoomableImage
                       src={obs.frameUrl}
                       alt={`${formatTime(obs.timeSec)} 캡처`}
                       className="w-full max-h-40 object-cover"
@@ -174,7 +224,7 @@ export default function AnalysisResultCard({ result, isLatest }: Props) {
           <div className="bg-orange-50 border border-orange-100 rounded-lg overflow-hidden">
             {r.failGifUrl ? (
               <div className="relative">
-                <img
+                <ZoomableImage
                   src={r.failGifUrl}
                   alt="실패 구간 GIF"
                   className="w-full object-cover max-h-56"
@@ -186,7 +236,7 @@ export default function AnalysisResultCard({ result, isLatest }: Props) {
               </div>
             ) : r.failFrameUrl ? (
               <div className="relative">
-                <img
+                <ZoomableImage
                   src={r.failFrameUrl}
                   alt="실패 구간 캡처"
                   className="w-full object-cover max-h-48"

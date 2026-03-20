@@ -37,7 +37,7 @@ export default function InstallPrompt() {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-16 left-3 right-3 z-40 bg-white rounded-xl shadow-lg border border-blue-200 p-4 flex items-start gap-3 animate-in slide-in-from-bottom pb-[calc(1rem+env(safe-area-inset-bottom))]">
+    <div className="fixed bottom-20 left-3 right-3 z-40 bg-white rounded-xl shadow-lg border border-blue-200 p-4 flex items-start gap-3">
       <div className="flex-1">
         <p className="text-sm font-semibold text-gray-900">ClimbAI 앱 설치</p>
         <p className="text-xs text-gray-500 mt-0.5">

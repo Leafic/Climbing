@@ -13,11 +13,10 @@ const NAV_ITEMS = [
 export default function BottomNav() {
   const pathname = usePathname();
 
-  // admin 페이지에서는 숨기기
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-50 pb-[env(safe-area-inset-bottom)]">
+    <nav className="bg-white border-t border-gray-200" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <div className="max-w-2xl mx-auto flex">
         {NAV_ITEMS.map((item) => {
           const active = item.match(pathname);
@@ -25,16 +24,16 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 min-h-[52px] text-xs transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${
                 active ? "text-blue-600 font-semibold" : "text-gray-400"
               }`}
             >
               <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${
-                active ? "bg-blue-100 text-blue-600" : "text-gray-400"
+                active ? "bg-blue-100 text-blue-600" : ""
               }`}>
                 {item.icon}
               </span>
-              <span>{item.label}</span>
+              <span className="text-[11px] leading-none">{item.label}</span>
             </Link>
           );
         })}
