@@ -77,14 +77,39 @@ def build_context(db: Session, device_id: str) -> str:
         lines.append(f"- 조명 특성: {profile.lighting_note}")
 
     corrections = profile.corrections or []
-    if corrections:
-        lines.append(f"- 이전 분석에서 사용자가 지적한 보정사항 ({len(corrections)}건):")
-        # 최근 5개만 프롬프트에 포함
-        for c in corrections[-5:]:
+
+    # 자동 축적 약점 패턴
+    weakness_names = {
+        "footwork": "발 위치/풋워크",
+        "balance": "무게중심/균형",
+        "grip": "그립/손 위치",
+        "dynamic": "동적 무브",
+        "endurance": "지구력/파워",
+        "posture": "자세/몸 방향",
+    }
+    verified_weaknesses = [c for c in corrections if c.get("type") == "verified_weakness" and c.get("count", 0) >= 2]
+    if verified_weaknesses:
+        lines.append("- 이 사용자의 반복 약점 (피드백으로 검증됨):")
+        for w in verified_weaknesses[:4]:
+            cat_name = weakness_names.get(w["category"], w["category"])
+            lines.append(f"  * {cat_name}: {w['count']}회 확인됨")
+        lines.append("  → 위 약점이 이번 영상에서도 보이면 '여전히 반복되는 문제'로 강조하세요.")
+        lines.append("  → 개선되었으면 '개선된 점'으로 명시하세요.")
+
+    # 자동 축적 성공률
+    auto_stats = next((c for c in corrections if c.get("type") == "auto_stats"), None)
+    if auto_stats:
+        lines.append(f"- 누적 성적: 총 {auto_stats['total']}회 시도, 성공률 {auto_stats['success_rate']}%, 평균 완성도 {auto_stats['avg_prob']}%")
+
+    # 수동 피드백 보정사항
+    manual = [c for c in corrections if c.get("type") not in ("auto_weakness", "auto_stats")]
+    if manual:
+        lines.append(f"- 사용자가 직접 지적한 보정사항 ({len(manual)}건):")
+        for c in manual[-3:]:
             ctype = c.get("type", "기타")
             note = c.get("note", "")
             lines.append(f"  * [{ctype}] {note}")
-        lines.append("위 보정사항을 이번 분석에 반영하여 같은 실수를 반복하지 마세요.")
+        lines.append("  → 위 보정사항을 이번 분석에 반영하여 같은 실수를 반복하지 마세요.")
 
-    lines.append(f"- 총 분석 {profile.analysis_count}회, 피드백 {profile.feedback_count}회 축적됨\n")
+    lines.append("")
     return "\n".join(lines)

@@ -132,6 +132,102 @@ def _extract_and_save_corrections(db: Session, device_id: str, feedback_text: st
         gym_repo.add_correction(db, device_id, c)
 
 
+def _auto_accumulate_profile(db: Session, device_id: str, result_data: dict):
+    """분석 결과에서 '객관적 사실'만 자동 축적.
+    약점 분석 같은 AI 판단은 틀릴 수 있으므로 자동 축적하지 않는다.
+    약점은 사용자가 피드백으로 확인한 것만 축적된다."""
+    try:
+        profile = gym_repo.get_or_create(db, device_id)
+
+        # ── 객관적 사실만 자동 축적 ──
+
+        # 1. 성공/실패 기록 (사용자가 직접 선택한 값이므로 객관적)
+        attempt = result_data.get("attemptResult", "failure")
+        prob = result_data.get("completionProbability", 0)
+        skill = result_data.get("skillLevel", "beginner")
+
+        existing_stats = next(
+            (c for c in (profile.corrections or []) if c.get("type") == "auto_stats"), None
+        )
+        corrections = [c for c in (profile.corrections or []) if c.get("type") != "auto_stats"]
+
+        if existing_stats:
+            total = existing_stats.get("total", 0) + 1
+            successes = existing_stats.get("successes", 0) + (1 if attempt == "success" else 0)
+            avg_prob = ((existing_stats.get("avg_prob", 0) * (total - 1)) + prob) / total
+        else:
+            total = 1
+            successes = 1 if attempt == "success" else 0
+            avg_prob = prob
+
+        corrections.append({
+            "type": "auto_stats",
+            "total": total,
+            "successes": successes,
+            "success_rate": round(successes / total * 100) if total > 0 else 0,
+            "avg_prob": round(avg_prob, 1),
+            "last_skill": skill,
+        })
+
+        profile.corrections = corrections
+
+        from app.models.models import now_kst
+        profile.updated_at = now_kst()
+        db.commit()
+    except Exception:
+        logger.exception("프로파일 자동 축적 실패 (무시)")
+
+
+def _accumulate_verified_weakness(db: Session, device_id: str, result_data: dict):
+    """피드백 후 재분석 결과에서 약점 축적.
+    사용자가 피드백을 줬다 = 분석 결과를 확인했다 = 검증된 데이터."""
+    try:
+        weakness_categories = {
+            "footwork": ["발 위치", "풋워크", "발이 미끄", "발바닥", "스미어링", "디딤", "밟", "발끝"],
+            "balance": ["무게중심", "중심", "균형", "골반", "벽에서 멀", "벽에서 떨", "몸이 뒤"],
+            "grip": ["그립", "손 위치", "손이 미끄", "잡지 못", "홀드를 잡"],
+            "dynamic": ["다이나믹", "도약", "랜지", "데드포인트"],
+            "endurance": ["지구력", "파워", "힘이 빠", "펌핑"],
+            "posture": ["자세", "몸 방향", "회전", "플래깅"],
+        }
+
+        detected = set()
+        for obs in (result_data.get("keyObservations") or []):
+            if isinstance(obs, dict) and obs.get("type") == "issue":
+                text = obs.get("observation", "")
+                for cat, keywords in weakness_categories.items():
+                    if any(kw in text for kw in keywords):
+                        detected.add(cat)
+
+        if not detected:
+            return
+
+        profile = gym_repo.get_or_create(db, device_id)
+
+        # 기존 verified_weakness 카운터 로드
+        weakness_counts = {}
+        for c in (profile.corrections or []):
+            if c.get("type") == "verified_weakness":
+                weakness_counts[c["category"]] = c.get("count", 0)
+
+        for cat in detected:
+            weakness_counts[cat] = weakness_counts.get(cat, 0) + 1
+
+        # 교체
+        other = [c for c in (profile.corrections or []) if c.get("type") != "verified_weakness"]
+        verified = [
+            {"type": "verified_weakness", "category": cat, "count": cnt}
+            for cat, cnt in sorted(weakness_counts.items(), key=lambda x: -x[1])
+        ]
+        profile.corrections = other + verified
+
+        from app.models.models import now_kst
+        profile.updated_at = now_kst()
+        db.commit()
+    except Exception:
+        logger.exception("검증된 약점 축적 실패 (무시)")
+
+
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
 
@@ -174,6 +270,10 @@ def create_analysis(body: AnalysisJobCreate, db: Session = Depends(get_db)):
             result_json=result_data,
         )
         analysis_repo.update_job_status(db, job, JobStatus.completed)
+
+        # 분석 결과에서 자동으로 사용자 프로파일 축적 (피드백 없이도 쌓임)
+        if body.device_id:
+            _auto_accumulate_profile(db, body.device_id, result_data)
     except Exception as e:
         analysis_repo.update_job_status(db, job, JobStatus.failed)
         import logging
@@ -244,6 +344,10 @@ def submit_feedback(analysis_id: str, body: FeedbackCreate, db: Session = Depend
         summary=new_result_data["summary"],
         result_json=new_result_data,
     )
+
+    # 피드백 후 재분석 = 사용자가 검증한 결과 → 약점 축적 가능
+    if job.device_id:
+        _accumulate_verified_weakness(db, job.device_id, new_result_data)
 
     return new_result
 
