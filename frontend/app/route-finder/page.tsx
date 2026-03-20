@@ -16,6 +16,8 @@ const HOLD_COLORS = [
   { value: "흰색", bg: "bg-white border border-gray-300", ring: "ring-gray-400" },
 ];
 
+const ROUTE_NUMBERS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
+
 const ANALYSIS_STEPS = [
   { pct: 15, label: "이미지 업로드 중..." },
   { pct: 40, label: "홀드 색상 식별 중..." },
@@ -84,7 +86,7 @@ export default function RouteFinderPage() {
       <div>
         <h1 className="text-2xl font-bold mb-1">루트 파인더</h1>
         <p className="text-gray-500 text-sm">
-          클라이밍 벽 사진을 올리고 홀드 색상을 선택하면 AI가 루트를 찾아드립니다.
+          벽 사진을 올리고 도전할 루트를 선택하면 AI가 분석해드립니다.
         </p>
       </div>
 
@@ -111,9 +113,12 @@ export default function RouteFinderPage() {
 
           {/* 홀드 색상 선택 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              도전할 홀드 색상
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              도전할 루트
             </label>
+            <p className="text-xs text-gray-400 mb-3">
+              홀드 색상 또는 벽에 붙은 번호 스티커(예: 6번)를 선택/입력하세요
+            </p>
             <div className="flex flex-wrap gap-2">
               {HOLD_COLORS.map((color) => (
                 <button
@@ -140,12 +145,28 @@ export default function RouteFinderPage() {
                 <span className="text-gray-700 font-medium">직접입력</span>
               </button>
             </div>
+            <p className="text-xs text-gray-400 mt-3 mb-1">번호 스티커로 루트를 구분하는 짐인 경우:</p>
+            <div className="flex flex-wrap gap-2">
+              {ROUTE_NUMBERS.map((num) => (
+                <button
+                  key={num}
+                  onClick={() => { setHoldColor(`${num}번`); setCustomColor(""); }}
+                  className={`w-10 h-10 rounded-lg border-2 transition-all text-sm font-bold flex items-center justify-center ${
+                    holdColor === `${num}번`
+                      ? "border-gray-900 ring-2 ring-gray-400 bg-gray-100"
+                      : "border-gray-200 hover:border-gray-300 bg-white"
+                  }`}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
             {holdColor === "직접입력" && (
               <input
                 type="text"
                 value={customColor}
                 onChange={(e) => setCustomColor(e.target.value)}
-                placeholder="색상을 입력하세요 (예: 하늘색, 연두색)"
+                placeholder="색상 또는 번호를 입력하세요 (예: 하늘색, 빨간6번)"
                 className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             )}
