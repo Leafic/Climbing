@@ -89,12 +89,12 @@ def build_context(db: Session, device_id: str) -> str:
     }
     verified_weaknesses = [c for c in corrections if c.get("type") == "verified_weakness" and c.get("count", 0) >= 2]
     if verified_weaknesses:
-        lines.append("- 이 사용자의 반복 약점 (피드백으로 검증됨):")
+        lines.append("- 이 사용자의 검증된 반복 약점:")
         for w in verified_weaknesses[:4]:
             cat_name = weakness_names.get(w["category"], w["category"])
-            lines.append(f"  * {cat_name}: {w['count']}회 확인됨")
-        lines.append("  → 위 약점이 이번 영상에서도 보이면 '여전히 반복되는 문제'로 강조하세요.")
-        lines.append("  → 개선되었으면 '개선된 점'으로 명시하세요.")
+            lines.append(f"  * {cat_name}: 이전 {w['count']}회 피드백에서 확인됨")
+        lines.append("  [필수] 이번 영상에서 위 약점이 보이면 keyObservations에 반드시 포함하고 '이전부터 반복되는 문제'라고 명시하세요.")
+        lines.append("  [필수] 개선되었으면 keyObservations에 type: 'good'으로 '이전 약점이 개선됨'을 명시하세요.")
 
     # 자동 축적 성공률
     auto_stats = next((c for c in corrections if c.get("type") == "auto_stats"), None)
@@ -102,7 +102,7 @@ def build_context(db: Session, device_id: str) -> str:
         lines.append(f"- 누적 성적: 총 {auto_stats['total']}회 시도, 성공률 {auto_stats['success_rate']}%, 평균 완성도 {auto_stats['avg_prob']}%")
 
     # 수동 피드백 보정사항
-    manual = [c for c in corrections if c.get("type") not in ("auto_weakness", "auto_stats")]
+    manual = [c for c in corrections if c.get("type") not in ("auto_weakness", "auto_stats", "verified_weakness")]
     if manual:
         lines.append(f"- 사용자가 직접 지적한 보정사항 ({len(manual)}건):")
         for c in manual[-3:]:

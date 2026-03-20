@@ -24,39 +24,36 @@ UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
 
 
 def _build_history_context(db: Session, device_id: str | None, current_job_id: str | None = None) -> str:
-    """디바이스의 이전 분석 이력을 프롬프트용 텍스트로 요약"""
+    """디바이스의 이전 분석 이력 — 원문 관찰 포인트 포함하여 구체적으로 구성"""
     if not device_id:
         return ""
-    prev_results = analysis_repo.get_device_history(db, device_id, limit=5)
-    # 현재 작업 제외
+    prev_results = analysis_repo.get_device_history(db, device_id, limit=3)
     prev_results = [r for r in prev_results if r.analysis_job_id != current_job_id]
     if not prev_results:
         return ""
 
     lines = []
-    for r in reversed(prev_results):  # 오래된 것부터
+    for idx, r in enumerate(reversed(prev_results), 1):  # 오래된 것부터
         rj = r.result_json if isinstance(r.result_json, dict) else {}
-        attempt = rj.get("attemptResult", "?")
+        attempt = rj.get("attemptResult", "failure")
         prob = rj.get("completionProbability", "?")
-        summary = rj.get("summary", "")[:80]
         fail_reason = rj.get("failReason", "")
-        obs_issues = [
-            o.get("observation", "")[:50]
-            for o in (rj.get("keyObservations") or [])
-            if isinstance(o, dict) and o.get("type") == "issue"
-        ][:2]
-        line = f"- [{attempt}] 성공률 {prob}% | {summary}"
+
+        lines.append(f"[이전 시도 {idx}] {'성공' if attempt == 'success' else '실패'} (완성도 {prob}%)")
         if fail_reason:
-            line += f" | 실패원인: {fail_reason[:40]}"
-        if obs_issues:
-            line += f" | 반복문제: {'; '.join(obs_issues)}"
-        lines.append(line)
+            lines.append(f"  실패 원인: {fail_reason}")
+
+        # 원문 관찰 포인트 (잘라내지 않음)
+        for obs in (rj.get("keyObservations") or []):
+            if isinstance(obs, dict):
+                otype = obs.get("type", "note")
+                text = obs.get("observation", "")
+                if text:
+                    tag = {"issue": "문제", "good": "잘함", "note": "참고"}.get(otype, "참고")
+                    lines.append(f"  [{tag}] {text}")
 
     return (
-        "\n[이 사용자의 이전 분석 이력]\n"
-        "아래 이력을 참고하여, 반복되는 약점 패턴을 인지하고 이번 분석에 반영하세요.\n"
-        "이전에 지적된 문제가 이번 영상에서도 보이면 '여전히 개선되지 않은 점'으로 강조하세요.\n"
-        "이전에 지적된 문제가 개선되었으면 '개선된 점'으로 명시하세요.\n"
+        "[이 사용자의 최근 분석 이력]\n"
         + "\n".join(lines)
         + "\n"
     )

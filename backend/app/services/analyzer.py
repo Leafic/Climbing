@@ -314,7 +314,18 @@ class GeminiAnalyzer(BaseAnalyzer):
                 attempt_result: str = "failure") -> dict:
         logger.info("[Gemini] analyze() — duration=%.1fs, skill_level=%s, attempt_result=%s, video=%s",
                     duration_seconds, skill_level, attempt_result, video_path)
-        memo_text = f"\n사용자 메모: {memo}" if memo else ""
+        # 개인화 컨텍스트는 프롬프트 최상단에 강제 지시로 배치
+        personalization_block = ""
+        if memo:
+            personalization_block = f"""
+[★★★ 필수 반영 — 이 사용자의 개인화 데이터 ★★★]
+아래는 이 사용자의 이전 분석에서 축적된 데이터입니다.
+이 정보를 이번 분석에 **반드시 반영**하세요. 무시하면 분석 품질이 떨어집니다.
+
+{memo}
+[개인화 데이터 끝]
+"""
+        memo_text = ""  # memo는 personalization_block으로 대체
         is_success = attempt_result == "success"
 
         # 3단계 스킬 레벨 분기
@@ -377,10 +388,10 @@ completionProbability는 '다음 시도 예상 성공 확률'입니다."""
         )
 
         prompt = f"""당신은 10년 경력의 전문 클라이밍 코치입니다.
-
+{personalization_block}
 {video_instruction}
 사용자 숙련도: {cfg["label"]}
-시도 결과: {"✅ 완등 성공" if is_success else "❌ 실패"}{memo_text}
+시도 결과: {"✅ 완등 성공" if is_success else "❌ 실패"}
 
 [숙련도별 분석 지침]
 {cfg["analysis_focus"]}
