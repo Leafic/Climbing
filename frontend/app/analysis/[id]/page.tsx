@@ -20,6 +20,8 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
   const [history, setHistory] = useState<AnalysisHistoryOut | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [ratings, setRatings] = useState<Record<string, "good" | "bad" | null>>({});
+  const [badReasons, setBadReasons] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,13 +63,47 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
     }
   }, [detail]);
 
+  const buildFeedbackText = (): string => {
+    const parts: string[] = [];
+
+    // 항목별 평가
+    const goodItems = Object.entries(ratings).filter(([, v]) => v === "good").map(([k]) => k);
+    const badItems = Object.entries(ratings).filter(([, v]) => v === "bad").map(([k]) => k);
+
+    if (goodItems.length > 0) {
+      parts.push(`[정확했던 항목] ${goodItems.join(", ")}`);
+    }
+    if (badItems.length > 0) {
+      for (const item of badItems) {
+        const reason = badReasons[item]?.trim();
+        if (reason) {
+          parts.push(`[틀렸던 항목: ${item}] ${reason}`);
+        } else {
+          parts.push(`[틀렸던 항목: ${item}] (사유 미입력)`);
+        }
+      }
+    }
+
+    // 자유 의견
+    if (feedback.trim()) {
+      parts.push(`[추가 의견] ${feedback.trim()}`);
+    }
+
+    return parts.join("\n");
+  };
+
+  const hasFeedbackContent = Object.values(ratings).some(v => v !== null) || feedback.trim();
+
   const handleFeedbackSubmit = async () => {
-    if (!feedback.trim()) return;
+    const text = buildFeedbackText();
+    if (!text) return;
     setSubmitting(true);
     setError(null);
     try {
-      await submitFeedback(id, feedback.trim());
+      await submitFeedback(id, text);
       setFeedback("");
+      setRatings({});
+      setBadReasons({});
       await fetchData();
       if (showHistory) await fetchHistory();
     } catch (e: any) {
@@ -139,33 +175,82 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
       {detail?.job.status === "completed" && (
         <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 flex flex-col gap-4">
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">추가 의견 입력</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">분석 평가</h3>
             <p className="text-xs text-gray-400">
-              AI 분석이 마음에 들지 않으면 추가 의견을 입력하고 재분석을 요청하세요.
+              각 항목을 평가하면 다음 분석이 더 정확해집니다
             </p>
           </div>
 
-          <div className="text-xs text-gray-400 flex flex-wrap gap-2">
-            {["발 위치가 문제였어요", "무게중심이 핵심인 것 같아요", "크럭스 구간이 더 중요해요", "손 자세를 봐주세요"].map(
-              (hint) => (
-                <button
-                  key={hint}
-                  onClick={() => setFeedback(hint)}
-                  className="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full transition-colors"
-                >
-                  {hint}
-                </button>
-              )
-            )}
+          {/* 항목별 좋아요/싫어요 */}
+          <div className="flex flex-col gap-2">
+            {[
+              { key: "요약", desc: "전체 시도 요약" },
+              { key: "관찰 포인트", desc: "핵심 순간 분석" },
+              { key: "자세/풋워크", desc: "자세·발 위치 피드백" },
+              { key: "코칭 제안", desc: "개선 방향 제안" },
+              { key: "좌우 구분", desc: "왼손/오른손, 왼발/오른발" },
+              { key: "홀드 색상", desc: "홀드 색상 인식" },
+            ].map((item) => (
+              <div key={item.key} className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-gray-700">{item.key}</span>
+                    <span className="text-xs text-gray-400 ml-1.5">{item.desc}</span>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => setRatings(prev => ({ ...prev, [item.key]: prev[item.key] === "good" ? null : "good" }))}
+                      className={`w-9 h-9 rounded-lg text-base flex items-center justify-center transition-all ${
+                        ratings[item.key] === "good"
+                          ? "bg-green-100 ring-2 ring-green-400"
+                          : "bg-gray-50 hover:bg-gray-100"
+                      }`}
+                    >
+                      O
+                    </button>
+                    <button
+                      onClick={() => setRatings(prev => ({ ...prev, [item.key]: prev[item.key] === "bad" ? null : "bad" }))}
+                      className={`w-9 h-9 rounded-lg text-base flex items-center justify-center transition-all ${
+                        ratings[item.key] === "bad"
+                          ? "bg-red-100 ring-2 ring-red-400"
+                          : "bg-gray-50 hover:bg-gray-100"
+                      }`}
+                    >
+                      X
+                    </button>
+                  </div>
+                </div>
+                {ratings[item.key] === "bad" && (
+                  <input
+                    type="text"
+                    value={badReasons[item.key] || ""}
+                    onChange={(e) => { if (e.target.value.length <= 200) setBadReasons(prev => ({ ...prev, [item.key]: e.target.value })); }}
+                    maxLength={200}
+                    placeholder={`${item.key}이(가) 어떻게 틀렸나요?`}
+                    className="ml-0 w-full border border-red-200 bg-red-50 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
+                  />
+                )}
+              </div>
+            ))}
           </div>
 
-          <textarea
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            placeholder="어떤 부분이 다르게 느껴지셨나요? (예: 발 위치가 더 중요한 것 같아요)"
-            rows={3}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
+          {/* 자유 의견 */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-xs text-gray-500">추가 의견 (선택)</p>
+              <p className={`text-xs ${feedback.length > 450 ? "text-red-500" : "text-gray-400"}`}>
+                {feedback.length}/500
+              </p>
+            </div>
+            <textarea
+              value={feedback}
+              onChange={(e) => { if (e.target.value.length <= 500) setFeedback(e.target.value); }}
+              placeholder="그 외 틀린 점이나 추가로 알려줄 것이 있다면 적어주세요"
+              rows={2}
+              maxLength={500}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+          </div>
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600">
@@ -175,14 +260,14 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
 
           <button
             onClick={handleFeedbackSubmit}
-            disabled={submitting || !feedback.trim()}
+            disabled={submitting || !hasFeedbackContent}
             className="bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {submitting ? "재분석 중..." : "🔄 피드백 반영 재분석"}
+            {submitting ? "재분석 중..." : "피드백 반영 재분석"}
           </button>
 
           <p className="text-xs text-gray-400 text-center">
-            rev.{detail.job.current_revision} · 최대 5회 재분석 가능
+            rev.{detail.job.current_revision} · 평가할수록 분석 정확도가 올라갑니다
           </p>
         </div>
       )}

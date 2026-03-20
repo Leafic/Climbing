@@ -95,35 +95,51 @@ def _enrich_with_media(result_data: dict, video_path: str, video_id: str) -> dic
     return result_data
 
 def _extract_and_save_corrections(db: Session, device_id: str, feedback_text: str):
-    """피드백 텍스트에서 색상/좌우/동작 보정 패턴을 추출하여 짐 프로파일에 저장"""
-    text = feedback_text.lower()
+    """구조화된 피드백 텍스트에서 보정사항을 추출하여 짐 프로파일에 저장.
+
+    구조화 피드백 형식:
+      [정확했던 항목] 요약, 관찰 포인트
+      [틀렸던 항목: 좌우 구분] 왼발이 아니라 오른발이었음
+      [추가 의견] ...
+    """
+    import re
     corrections = []
 
-    # 색상 보정 키워드
-    color_keywords = ["색상", "색깔", "색이", "색은", "노란", "빨간", "파란", "초록", "주황", "보라",
-                       "분홍", "검정", "흰", "하늘", "연두"]
-    correction_keywords = ["아니", "틀", "잘못", "아닌데", "가 아니라", "이 아니라", "다른 색"]
-    if any(ck in text for ck in color_keywords) and any(ck in text for ck in correction_keywords):
-        corrections.append({"type": "color", "note": feedback_text[:100]})
+    # 구조화된 피드백 파싱
+    accurate_match = re.search(r"\[정확했던 항목\]\s*(.+)", feedback_text)
+    wrong_matches = re.findall(r"\[틀렸던 항목:\s*(.+?)\]\s*(.+?)(?=\n\[|\n*$)", feedback_text, re.DOTALL)
 
-    # 좌우 보정
-    lr_keywords = ["왼손", "오른손", "왼발", "오른발", "왼쪽", "오른쪽"]
-    if any(lk in text for lk in lr_keywords) and any(ck in text for ck in correction_keywords):
-        corrections.append({"type": "direction", "note": feedback_text[:100]})
+    if accurate_match:
+        items = accurate_match.group(1).strip()
+        corrections.append({"type": "confirmed_good", "note": f"사용자가 정확하다고 확인: {items}"})
 
-    # 동작 보정 (다이나믹 등)
-    move_keywords = ["다이나믹", "정적", "랜지", "스태틱"]
-    if any(mk in text for mk in move_keywords) and any(ck in text for ck in correction_keywords):
-        corrections.append({"type": "move_type", "note": feedback_text[:100]})
+    for item_name, reason in wrong_matches:
+        item_name = item_name.strip()
+        reason = reason.strip()
 
-    # 홀드 인식 보정
-    hold_keywords = ["홀드", "스티커", "번호", "루트", "테이프"]
-    if any(hk in text for hk in hold_keywords) and any(ck in text for ck in correction_keywords):
-        corrections.append({"type": "hold_recognition", "note": feedback_text[:100]})
+        # 항목명 → 보정 타입 매핑
+        type_map = {
+            "좌우 구분": "direction",
+            "홀드 색상": "color",
+            "자세/풋워크": "posture",
+            "코칭 제안": "coaching",
+            "관찰 포인트": "observation",
+            "요약": "summary",
+        }
+        ctype = type_map.get(item_name, "general")
+        corrections.append({"type": ctype, "note": f"{item_name} 오류: {reason[:150]}"})
 
-    # 패턴이 감지되지 않아도, 피드백 자체를 일반 보정으로 저장 (중요한 정보일 수 있음)
-    if not corrections:
-        corrections.append({"type": "general", "note": feedback_text[:100]})
+    # 구조화 피드백이 아닌 경우 기존 키워드 매칭 fallback
+    if not accurate_match and not wrong_matches:
+        text = feedback_text.lower()
+        correction_keywords = ["아니", "틀", "잘못", "아닌데", "아니라", "다른"]
+
+        if any(kw in text for kw in ["색상", "색깔", "노란", "빨간", "파란", "초록"]) and any(ck in text for ck in correction_keywords):
+            corrections.append({"type": "color", "note": feedback_text[:150]})
+        elif any(kw in text for kw in ["왼손", "오른손", "왼발", "오른발"]) and any(ck in text for ck in correction_keywords):
+            corrections.append({"type": "direction", "note": feedback_text[:150]})
+        else:
+            corrections.append({"type": "general", "note": feedback_text[:150]})
 
     for c in corrections:
         gym_repo.add_correction(db, device_id, c)
