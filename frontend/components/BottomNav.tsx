@@ -4,10 +4,10 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 const NAV_ITEMS = [
-  { href: "/", label: "홈", icon: "H", match: (p: string) => p === "/" },
-  { href: "/upload", label: "영상 분석", icon: "V", match: (p: string) => p === "/upload" },
-  { href: "/route-finder", label: "루트 찾기", icon: "R", match: (p: string) => p.startsWith("/route-finder") },
-  { href: "/analyses", label: "내 분석", icon: "M", match: (p: string) => p.startsWith("/analyses") || p.startsWith("/analysis/") },
+  { href: "/", label: "홈", icon: "home", match: (p: string) => p === "/" },
+  { href: "/upload", label: "영상 분석", icon: "movie_filter", match: (p: string) => p === "/upload" },
+  { href: "/route-finder", label: "루트 파인더", icon: "explore", match: (p: string) => p.startsWith("/route-finder") },
+  { href: "/analyses", label: "내 분석", icon: "analytics", match: (p: string) => p.startsWith("/analyses") || p.startsWith("/analysis/") },
 ];
 
 export default function BottomNav() {
@@ -16,24 +16,30 @@ export default function BottomNav() {
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <nav className="bg-white border-t border-gray-200" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <div className="max-w-2xl mx-auto flex">
+    <nav className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-2xl z-50 rounded-t-3xl shadow-nav pb-[env(safe-area-inset-bottom)]">
+      <div className="flex justify-around items-center px-4 pb-8 pt-4">
         {NAV_ITEMS.map((item) => {
           const active = item.match(pathname);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${
-                active ? "text-blue-600 font-semibold" : "text-gray-400"
+              className={`flex flex-col items-center gap-1 min-w-[56px] transition-all duration-300 ease-out active:scale-95 ${
+                active
+                  ? "text-primary font-bold scale-110"
+                  : "text-slate-400 opacity-70 hover:opacity-100"
               }`}
             >
-              <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold ${
-                active ? "bg-blue-100 text-blue-600" : ""
-              }`}>
+              <span
+                className={`material-symbols-outlined text-[28px] ${
+                  active ? "material-symbols-filled" : ""
+                }`}
+              >
                 {item.icon}
               </span>
-              <span className="text-[11px] leading-none">{item.label}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest">
+                {item.label}
+              </span>
             </Link>
           );
         })}

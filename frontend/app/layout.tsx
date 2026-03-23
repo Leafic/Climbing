@@ -20,7 +20,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#2563eb",
+  themeColor: "#004ac6",
   viewportFit: "cover",
 };
 
@@ -32,27 +32,28 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className="bg-gray-50 text-gray-900">
-        <div id="app-shell">
-          <header className="bg-white border-b border-gray-200 px-4 py-3">
-            <div className="max-w-2xl mx-auto flex items-center justify-between">
-              <a href="/" className="text-lg font-bold text-blue-600">
-                🧗 ClimbAI
-              </a>
-              <a href="/admin" className="text-[10px] text-gray-300 hover:text-gray-500 transition-colors">
-                dev
+      <body className="bg-surface min-h-screen text-on-surface font-body">
+        <header className="bg-white/80 backdrop-blur-xl sticky top-0 z-50">
+          <div className="max-w-md mx-auto flex items-center justify-between px-6 py-3">
+            <div className="flex items-center gap-2">
+              <a href="/" className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-on-surface-variant">menu</span>
+                <span className="text-2xl font-extrabold tracking-tighter text-primary font-headline">
+                  ClimbAI
+                </span>
               </a>
             </div>
-          </header>
-          <div id="app-main">
-            <div className="max-w-2xl mx-auto w-full px-3 sm:px-4 py-4 sm:py-6">
-              {children}
-            </div>
+            <a href="/admin" className="text-on-surface-variant hover:text-on-surface transition-colors">
+              <span className="material-symbols-outlined">settings_applications</span>
+            </a>
           </div>
-          <BottomNav />
-        </div>
+        </header>
+        <main className="max-w-md mx-auto px-6 py-8 pb-32">{children}</main>
+        <BottomNav />
         <InstallPrompt />
         <PWARegister />
       </body>

@@ -34,11 +34,14 @@ export default function TrendChart({ results }: Props) {
   const improved = diff > 0;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-gray-700">📈 시도별 개선 추이</h4>
-        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-          improved ? "bg-green-100 text-green-700" : diff === 0 ? "bg-gray-100 text-gray-500" : "bg-red-100 text-red-700"
+    <div className="bg-surface-container-lowest rounded-2xl shadow-ambient p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-bold text-on-surface flex items-center gap-2">
+          <span className="material-symbols-outlined text-[18px] text-primary">trending_up</span>
+          시도별 개선 추이
+        </h4>
+        <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+          improved ? "bg-secondary-container text-on-secondary-container" : diff === 0 ? "bg-surface-container-high text-on-surface-variant" : "bg-error-container text-on-error-container"
         }`}>
           {improved ? "+" : ""}{diff}%p
         </span>
@@ -48,16 +51,16 @@ export default function TrendChart({ results }: Props) {
         {/* Grid lines */}
         {[0, 25, 50, 75, 100].map((v) => (
           <g key={v}>
-            <line x1={PAD_X} y1={y(v)} x2={W - PAD_X} y2={y(v)} stroke="#e5e7eb" strokeWidth="1" strokeDasharray={v === 0 || v === 100 ? "0" : "4 2"} />
-            <text x={PAD_X - 6} y={y(v) + 4} textAnchor="end" className="fill-gray-400" fontSize="10">{v}</text>
+            <line x1={PAD_X} y1={y(v)} x2={W - PAD_X} y2={y(v)} stroke="#e6e8ea" strokeWidth="1" strokeDasharray={v === 0 || v === 100 ? "0" : "4 2"} />
+            <text x={PAD_X - 6} y={y(v) + 4} textAnchor="end" fill="#737686" fontSize="10">{v}</text>
           </g>
         ))}
 
         {/* Gradient fill */}
         <defs>
           <linearGradient id="probGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={improved ? "#22c55e" : "#ef4444"} stopOpacity="0.25" />
-            <stop offset="100%" stopColor={improved ? "#22c55e" : "#ef4444"} stopOpacity="0.02" />
+            <stop offset="0%" stopColor={improved ? "#006c49" : "#ba1a1a"} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={improved ? "#006c49" : "#ba1a1a"} stopOpacity="0.02" />
           </linearGradient>
         </defs>
         <path
@@ -66,21 +69,21 @@ export default function TrendChart({ results }: Props) {
         />
 
         {/* Line */}
-        <path d={probLine} fill="none" stroke={improved ? "#22c55e" : "#ef4444"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={probLine} fill="none" stroke={improved ? "#006c49" : "#ba1a1a"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Points + labels */}
         {points.map((p, i) => (
           <g key={i}>
-            <circle cx={x(i)} cy={y(p.prob)} r="4" fill="white" stroke={improved ? "#22c55e" : "#ef4444"} strokeWidth="2" />
-            <text x={x(i)} y={y(p.prob) - 10} textAnchor="middle" className="fill-gray-700 font-semibold" fontSize="11">{p.prob}%</text>
-            <text x={x(i)} y={H - 6} textAnchor="middle" className="fill-gray-400" fontSize="10">rev.{p.rev}</text>
+            <circle cx={x(i)} cy={y(p.prob)} r="4" fill="#ffffff" stroke={improved ? "#006c49" : "#ba1a1a"} strokeWidth="2" />
+            <text x={x(i)} y={y(p.prob) - 10} textAnchor="middle" fill="#191c1e" fontWeight="600" fontSize="11">{p.prob}%</text>
+            <text x={x(i)} y={H - 6} textAnchor="middle" fill="#737686" fontSize="10">rev.{p.rev}</text>
           </g>
         ))}
       </svg>
 
-      <div className="flex items-center justify-center gap-4 mt-2 text-xs text-gray-400">
+      <div className="flex items-center justify-center gap-4 mt-3 text-xs text-on-surface-variant">
         <span>초기 분석: {first}%</span>
-        <span>→</span>
+        <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
         <span>최신: {last}%</span>
       </div>
     </div>

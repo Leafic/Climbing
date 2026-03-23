@@ -1,44 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 앱 레이아웃: header / main(스크롤) / nav 3단 구조 */
-#app-shell {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  height: 100dvh;
-  height: 100vh; /* dvh 미지원 브라우저 폴백 */
-  overflow: hidden;
-}
-
-@supports (height: 100dvh) {
-  #app-shell {
-    height: 100dvh;
-  }
-}
-
-#app-main {
-  min-height: 0; /* CSS Grid 스크롤 버그 fix: auto → 0 */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-}
-
-/* 앱 느낌 기본 설정 */
+/* 기본 폰트 */
 body {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* Material Symbols 기본 스타일 */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Material Symbols Filled variant */
+.material-symbols-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* 모바일 앱 환경 최적화 */
+html {
+  /* iOS 바운스 스크롤 방지 (standalone 모드) */
+  overscroll-behavior: none;
+  /* iOS safe-area 대응 */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+body {
+  /* 텍스트 선택 방지 (앱 느낌) - 입력 필드 제외 */
   -webkit-user-select: none;
   user-select: none;
+  /* iOS 탭 하이라이트 제거 */
   -webkit-tap-highlight-color: transparent;
+  /* 부드러운 스크롤 */
+  -webkit-overflow-scrolling: touch;
 }
 
+/* 입력 필드에서는 텍스트 선택 허용 */
 input, textarea, [contenteditable] {
   -webkit-user-select: text;
   user-select: text;
 }
 
-/* standalone 모드에서만 safe-area 상단 패딩 */
+/* iOS standalone 모드에서 상단 노치 대응 */
+@supports (padding-top: env(safe-area-inset-top)) {
+  header {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* 하단 네비 safe-area */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-nav-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Pull-to-refresh 방지 (standalone 모드) */
 @media (display-mode: standalone) {
-  #app-shell {
-    padding-top: env(safe-area-inset-top, 0px);
+  body {
+    overscroll-behavior-y: contain;
   }
 }

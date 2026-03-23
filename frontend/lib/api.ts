@@ -1,6 +1,6 @@
 import { getDeviceId } from "./device";
 
-const API_BASE = "";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 export interface VideoUploadResponse {
   id: string;
@@ -195,9 +195,12 @@ export async function getMyAnalyses(deviceId: string): Promise<MyAnalysesOut> {
 // ─── Route Analysis ───
 
 export interface HoldPosition {
-  xPct: number;
-  yPct: number;
+  xPx: number;
+  yPx: number;
+  xPct?: number;  // 레거시 호환
+  yPct?: number;  // 레거시 호환
   label: string;
+  hand?: "left" | "right";
 }
 
 export interface RouteSuggestion {
@@ -219,6 +222,9 @@ export interface RouteAnalysisResult {
   confidence: number;
   modelUsed?: string;
   routeImageUrl?: string;
+  originalImageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
 }
 
 export async function analyzeRoute(

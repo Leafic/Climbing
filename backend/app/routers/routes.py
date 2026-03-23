@@ -76,7 +76,26 @@ def analyze_route(
         if device_id and result.get("routeSystem"):
             gym_repo.update_route_system(db, device_id, result["routeSystem"])
 
-        # 루트 경로를 이미지에 그리기
+        # 원본 이미지를 별도 저장 (프론트엔드 오버레이용)
+        import shutil, uuid as _uuid
+        upload_dir = os.getenv("UPLOAD_DIR", "./uploads")
+        os.makedirs(os.path.join(upload_dir, "originals"), exist_ok=True)
+        ext = os.path.splitext(temp_path)[1] or ".jpg"
+        orig_name = f"originals/orig_{_uuid.uuid4().hex[:8]}{ext}"
+        orig_path = os.path.join(upload_dir, orig_name)
+        shutil.copy2(temp_path, orig_path)
+        result["originalImageUrl"] = f"/uploads/{orig_name}"
+
+        # 원본 이미지 크기 저장
+        from PIL import Image as _PILImage
+        try:
+            with _PILImage.open(temp_path) as _img:
+                result["imageWidth"] = _img.width
+                result["imageHeight"] = _img.height
+        except Exception:
+            pass
+
+        # 루트 경로를 이미지에 그리기 (참고용)
         routes = result.get("routes", [])
         if routes:
             route_image_url = draw_routes_on_image(temp_path, routes)

@@ -38,11 +38,15 @@ def draw_routes_on_image(image_path: str, routes: List[Dict]) -> str:
             circle_color = color + (220,)
             text_color = (255, 255, 255, 255)
 
-            # 좌표 변환 (% → px)
+            # 좌표 변환 (픽셀 좌표 직접 사용, 없으면 % 폴백)
             points = []
             for hold in holds:
-                x = int(hold.get("xPct", 0) / 100 * w)
-                y = int(hold.get("yPct", 0) / 100 * h)
+                if "xPx" in hold:
+                    x = int(hold["xPx"])
+                    y = int(hold["yPx"])
+                else:
+                    x = int(hold.get("xPct", 0) / 100 * w)
+                    y = int(hold.get("yPct", 0) / 100 * h)
                 points.append((x, y))
 
             # 경로 선 그리기 (두꺼운 선)

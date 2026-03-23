@@ -1,49 +1,59 @@
 import Link from "next/link";
 
+const FEATURES = [
+  { icon: "videocam", label: "영상 분석하기", sub: "AI Pose Tracking", href: "/upload", color: "bg-primary-fixed text-primary" },
+  { icon: "explore", label: "루트 파인더", sub: "Optimal Beta AI", href: "/route-finder", color: "bg-secondary-container/30 text-secondary" },
+  { icon: "analytics", label: "내 분석 이력", sub: "Progress Stats", href: "/analyses", color: "bg-tertiary-container/20 text-tertiary" },
+  { icon: "groups", label: "커뮤니티/팁", sub: "Expert Beta", href: "#", color: "bg-surface-container-high text-on-surface-variant" },
+];
+
 export default function HomePage() {
   return (
-    <div className="flex flex-col items-center text-center py-10 sm:py-16 gap-6 sm:gap-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">
-          클라이밍 영상 AI 분석
+    <div className="flex flex-col gap-10">
+      {/* Hero */}
+      <div className="pt-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-3">
+          Smart Climbing Assistant
+        </p>
+        <h1 className="text-3xl font-extrabold tracking-tight leading-tight text-on-surface font-headline">
+          클라이밍 영상{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-container">
+            AI 분석
+          </span>
         </h1>
-        <p className="text-gray-500 text-base max-w-md">
-          30초~3분 영상을 업로드하면 AI가 실패 원인, 자세, 발 위치, 무게중심을
-          분석하고 완등 전략을 제안합니다.
+        <p className="text-on-surface-variant text-sm leading-relaxed mt-3">
+          당신의 무브를 정밀하게 분석하고
+          <br />
+          완등을 위한 최적의 경로를 제안합니다.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 w-full max-w-sm text-sm">
-        {[
-          { icon: "📹", label: "영상 업로드" },
-          { icon: "🤖", label: "AI 자동 분석" },
-          { icon: "💬", label: "피드백 반영 재분석" },
-          { icon: "🗺️", label: "벽 사진 루트 찾기" },
-        ].map((item) => (
-          <div
+      {/* Feature Grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {FEATURES.map((item) => (
+          <Link
             key={item.label}
-            className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col items-center gap-2"
+            href={item.href}
+            className="bg-surface-container-lowest rounded-2xl p-5 flex flex-col justify-between aspect-square shadow-ambient active:scale-95 transition-all duration-300"
           >
-            <span className="text-2xl">{item.icon}</span>
-            <span className="text-gray-700 font-medium">{item.label}</span>
-          </div>
+            <div className={`w-12 h-12 rounded-2xl ${item.color} flex items-center justify-center`}>
+              <span className="material-symbols-outlined text-[24px]">{item.icon}</span>
+            </div>
+            <div>
+              <p className="font-bold text-on-surface text-sm">{item.label}</p>
+              <p className="text-[10px] text-on-surface-variant opacity-70 mt-0.5">{item.sub}</p>
+            </div>
+          </Link>
         ))}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
-        <Link
-          href="/upload"
-          className="flex-1 text-center bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-        >
-          영상 분석하기
-        </Link>
-        <Link
-          href="/route-finder"
-          className="flex-1 text-center bg-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-700 transition-colors"
-        >
-          루트 찾기
-        </Link>
-      </div>
+      {/* FAB */}
+      <Link
+        href="/upload"
+        className="fixed right-6 bottom-28 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-container text-on-primary flex items-center justify-center shadow-ambient-lg z-40 active:scale-90 transition-transform duration-300"
+      >
+        <span className="material-symbols-outlined text-[28px]">photo_camera</span>
+      </Link>
     </div>
   );
 }
