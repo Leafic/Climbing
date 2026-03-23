@@ -1,10 +1,6 @@
-const CACHE_NAME = "climbai-v2";
-const STATIC_ASSETS = ["/", "/upload", "/analyses", "/route-finder"];
+const CACHE_NAME = "climbai-v3";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
   self.skipWaiting();
 });
 
@@ -22,32 +18,38 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
 
-  // API 요청은 네트워크 우선
-  if (url.pathname.startsWith("/api/")) {
+  // API 요청 — 네트워크 only (캐시 안 함)
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/uploads/")) {
+    return;
+  }
+
+  // _next/static/* (해시된 빌드 파일) — cache-first (파일명에 해시 포함되어 안전)
+  if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
-      fetch(event.request).catch(() =>
-        new Response(JSON.stringify({ detail: "오프라인 상태입니다" }), {
-          status: 503,
-          headers: { "Content-Type": "application/json" },
-        })
-      )
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        });
+      })
     );
     return;
   }
 
-  // 정적 리소스는 캐시 우선
+  // HTML 페이지 및 기타 — network-first (항상 최신 버전 시도)
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(() =>
-          caches.match("/").then((fallback) => fallback || new Response("오프라인입니다", { status: 503 }))
-        );
-    })
+    fetch(event.request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() =>
+        caches.match(event.request).then((cached) =>
+          cached || new Response("오프라인입니다", { status: 503, headers: { "Content-Type": "text/plain" } })
+        )
+      )
   );
 });
