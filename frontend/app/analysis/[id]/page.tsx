@@ -272,7 +272,7 @@ export default function AnalysisPage({ params }: { params: Promise<{ id: string 
           <button
             onClick={handleFeedbackSubmit}
             disabled={submitting || !hasFeedbackContent}
-            className="bg-on-surface text-surface py-4 rounded-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            className="bg-primary text-on-primary py-4 rounded-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-[20px]">send</span>
             {submitting ? "재분석 중..." : "의견 보내기"}

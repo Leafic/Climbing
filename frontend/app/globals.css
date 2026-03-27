@@ -5,7 +5,109 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 기본 폰트 */
+/* ── Light Theme (default) ── */
+:root {
+  --color-primary: #004ac6;
+  --color-primary-container: #2563eb;
+  --color-primary-fixed: #dbe1ff;
+  --color-on-primary: #ffffff;
+  --color-on-primary-container: #001a43;
+
+  --color-secondary: #006c49;
+  --color-secondary-container: #6cf8bb;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #002113;
+
+  --color-tertiary: #632ecd;
+  --color-tertiary-container: #7d4ce7;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #21005d;
+
+  --color-surface: #f7f9fb;
+  --color-surface-dim: #d7dadc;
+  --color-surface-bright: #f7f9fb;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f4f6;
+  --color-surface-container: #eceef0;
+  --color-surface-container-high: #e6e8ea;
+  --color-surface-container-highest: #e0e3e5;
+
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #434655;
+  --color-outline: #737686;
+  --color-outline-variant: #c3c6d7;
+
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #410002;
+
+  --color-inverse-surface: #2e3133;
+  --color-inverse-on-surface: #eff1f3;
+  --color-inverse-primary: #b4c5ff;
+
+  /* Shadows */
+  --shadow-ambient: 0 12px 32px -4px rgba(25, 28, 30, 0.06);
+  --shadow-ambient-lg: 0 16px 48px -8px rgba(25, 28, 30, 0.10);
+  --shadow-nav: 0 -12px 32px -4px rgba(0, 0, 0, 0.06);
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-bg-heavy: rgba(255, 255, 255, 0.9);
+}
+
+/* ── Dark Theme ── */
+.dark {
+  --color-primary: #b4c5ff;
+  --color-primary-container: #1d4ed8;
+  --color-primary-fixed: #1a3060;
+  --color-on-primary: #002966;
+  --color-on-primary-container: #dbe1ff;
+
+  --color-secondary: #6cf8bb;
+  --color-secondary-container: #004d34;
+  --color-on-secondary: #003823;
+  --color-on-secondary-container: #8affd0;
+
+  --color-tertiary: #d4bbff;
+  --color-tertiary-container: #4a1a9e;
+  --color-on-tertiary: #3a0093;
+  --color-on-tertiary-container: #ecdcff;
+
+  --color-surface: #111315;
+  --color-surface-dim: #111315;
+  --color-surface-bright: #363a3c;
+  --color-surface-container-lowest: #0c0e10;
+  --color-surface-container-low: #191c1e;
+  --color-surface-container: #1e2124;
+  --color-surface-container-high: #282b2e;
+  --color-surface-container-highest: #333638;
+
+  --color-on-surface: #e2e4e6;
+  --color-on-surface-variant: #c3c6d7;
+  --color-outline: #8d9099;
+  --color-outline-variant: #434655;
+
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-on-error: #690005;
+  --color-on-error-container: #ffdad6;
+
+  --color-inverse-surface: #e2e4e6;
+  --color-inverse-on-surface: #2e3133;
+  --color-inverse-primary: #004ac6;
+
+  /* Shadows — subtle glow in dark mode */
+  --shadow-ambient: 0 12px 32px -4px rgba(0, 0, 0, 0.25);
+  --shadow-ambient-lg: 0 16px 48px -8px rgba(0, 0, 0, 0.35);
+  --shadow-nav: 0 -8px 24px -4px rgba(0, 0, 0, 0.3);
+
+  /* Glass */
+  --glass-bg: rgba(17, 19, 21, 0.8);
+  --glass-bg-heavy: rgba(17, 19, 21, 0.9);
+}
+
+/* ── 기본 폰트 ── */
 body {
   font-family: 'Noto Sans KR', sans-serif;
 }
@@ -14,7 +116,23 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Noto Sans KR', sans-serif;
 }
 
-/* Material Symbols 기본 스타일 */
+/* ── Staggered entrance animation ── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeSlideUp 0.4s ease-out both;
+}
+
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+
+/* ── Material Symbols ── */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -31,52 +149,50 @@ h1, h2, h3, h4, h5, h6 {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/* Material Symbols Filled variant */
 .material-symbols-filled {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/* 모바일 앱 환경 최적화 */
+/* ── 모바일 앱 환경 최적화 ── */
 html {
-  /* iOS 바운스 스크롤 방지 (standalone 모드) */
   overscroll-behavior: none;
-  /* iOS safe-area 대응 */
   padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 
 body {
-  /* 텍스트 선택 방지 (앱 느낌) - 입력 필드 제외 */
   -webkit-user-select: none;
   user-select: none;
-  /* iOS 탭 하이라이트 제거 */
   -webkit-tap-highlight-color: transparent;
-  /* 부드러운 스크롤 */
   -webkit-overflow-scrolling: touch;
 }
 
-/* 입력 필드에서는 텍스트 선택 허용 */
 input, textarea, [contenteditable] {
   -webkit-user-select: text;
   user-select: text;
 }
 
-/* iOS standalone 모드에서 상단 노치 대응 */
 @supports (padding-top: env(safe-area-inset-top)) {
   header {
     padding-top: env(safe-area-inset-top);
   }
 }
 
-/* 하단 네비 safe-area */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .bottom-nav-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
-/* Pull-to-refresh 방지 (standalone 모드) */
 @media (display-mode: standalone) {
   body {
     overscroll-behavior-y: contain;
   }
+}
+
+/* ── Smooth theme transition ── */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.15s ease, box-shadow 0.3s ease !important;
 }

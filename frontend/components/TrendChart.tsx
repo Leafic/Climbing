@@ -1,3 +1,5 @@
+"use client";
+
 import { AnalysisResultOut } from "@/lib/api";
 
 interface Props {
@@ -33,6 +35,12 @@ export default function TrendChart({ results }: Props) {
   const diff = last - first;
   const improved = diff > 0;
 
+  // Use CSS variable-friendly colors
+  const lineColor = improved ? "var(--color-secondary)" : "var(--color-error)";
+  const gridColor = "var(--color-surface-container-high)";
+  const labelColor = "var(--color-outline)";
+  const textColor = "var(--color-on-surface)";
+
   return (
     <div className="bg-surface-container-lowest rounded-2xl shadow-ambient p-5">
       <div className="flex items-center justify-between mb-4">
@@ -51,16 +59,16 @@ export default function TrendChart({ results }: Props) {
         {/* Grid lines */}
         {[0, 25, 50, 75, 100].map((v) => (
           <g key={v}>
-            <line x1={PAD_X} y1={y(v)} x2={W - PAD_X} y2={y(v)} stroke="#e6e8ea" strokeWidth="1" strokeDasharray={v === 0 || v === 100 ? "0" : "4 2"} />
-            <text x={PAD_X - 6} y={y(v) + 4} textAnchor="end" fill="#737686" fontSize="10">{v}</text>
+            <line x1={PAD_X} y1={y(v)} x2={W - PAD_X} y2={y(v)} stroke={gridColor} strokeWidth="1" strokeDasharray={v === 0 || v === 100 ? "0" : "4 2"} />
+            <text x={PAD_X - 6} y={y(v) + 4} textAnchor="end" fill={labelColor} fontSize="10">{v}</text>
           </g>
         ))}
 
         {/* Gradient fill */}
         <defs>
           <linearGradient id="probGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={improved ? "#006c49" : "#ba1a1a"} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={improved ? "#006c49" : "#ba1a1a"} stopOpacity="0.02" />
+            <stop offset="0%" stopColor={lineColor} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={lineColor} stopOpacity="0.02" />
           </linearGradient>
         </defs>
         <path
@@ -69,14 +77,14 @@ export default function TrendChart({ results }: Props) {
         />
 
         {/* Line */}
-        <path d={probLine} fill="none" stroke={improved ? "#006c49" : "#ba1a1a"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={probLine} fill="none" stroke={lineColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Points + labels */}
         {points.map((p, i) => (
           <g key={i}>
-            <circle cx={x(i)} cy={y(p.prob)} r="4" fill="#ffffff" stroke={improved ? "#006c49" : "#ba1a1a"} strokeWidth="2" />
-            <text x={x(i)} y={y(p.prob) - 10} textAnchor="middle" fill="#191c1e" fontWeight="600" fontSize="11">{p.prob}%</text>
-            <text x={x(i)} y={H - 6} textAnchor="middle" fill="#737686" fontSize="10">rev.{p.rev}</text>
+            <circle cx={x(i)} cy={y(p.prob)} r="4" fill="var(--color-surface-container-lowest)" stroke={lineColor} strokeWidth="2" />
+            <text x={x(i)} y={y(p.prob) - 10} textAnchor="middle" fill={textColor} fontWeight="600" fontSize="11">{p.prob}%</text>
+            <text x={x(i)} y={H - 6} textAnchor="middle" fill={labelColor} fontSize="10">rev.{p.rev}</text>
           </g>
         ))}
       </svg>

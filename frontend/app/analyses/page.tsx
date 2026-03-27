@@ -86,17 +86,28 @@ export default function AnalysesPage() {
       {/* 목록 */}
       {filtered.length === 0 ? (
         <div className="bg-surface-container-lowest rounded-2xl shadow-ambient p-8 text-center">
-          <span className="material-symbols-outlined text-[48px] text-outline-variant mb-3 block">search_off</span>
-          <p className="text-on-surface-variant text-sm mb-4">
-            {analyses.length === 0 ? "아직 분석 이력이 없습니다." : "해당 조건의 분석이 없습니다."}
-          </p>
-          {analyses.length === 0 && (
-            <button
-              onClick={() => router.push("/upload")}
-              className="text-primary text-sm font-bold active:scale-95 transition-transform"
-            >
-              첫 영상 분석하러 가기
-            </button>
+          {analyses.length === 0 ? (
+            <>
+              <div className="w-16 h-16 rounded-2xl bg-tertiary-container/20 flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined text-tertiary text-[32px]">analytics</span>
+              </div>
+              <p className="font-bold text-on-surface text-lg font-headline">아직 분석 이력이 없어요</p>
+              <p className="text-sm text-on-surface-variant mt-2 leading-relaxed">
+                영상을 업로드하면 AI가 자세, 발 위치,<br />무게중심을 분석해드려요
+              </p>
+              <button
+                onClick={() => router.push("/upload")}
+                className="mt-5 inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-xl font-bold text-sm active:scale-95 transition-transform"
+              >
+                첫 영상 분석하기
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-[48px] text-outline-variant mb-3 block">filter_list_off</span>
+              <p className="text-on-surface-variant text-sm">해당 조건의 분석이 없습니다.</p>
+            </>
           )}
         </div>
       ) : (

@@ -12,6 +12,12 @@ const ANALYSIS_STEPS = [
   { pct: 90, label: "마무리", icon: "check_circle" },
 ];
 
+const SKILL_LEVELS = [
+  { value: "beginner" as const, label: "입문", desc: "V0-V2, 시작한 지 6개월 이내" },
+  { value: "intermediate" as const, label: "중급", desc: "V3-V5, 무브를 의식하는 단계" },
+  { value: "advanced" as const, label: "상급", desc: "V6+, 테크닉 최적화 단계" },
+];
+
 export default function UploadPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,6 +31,7 @@ export default function UploadPage() {
   const [step, setStep] = useState<"upload" | "analyze" | "duplicate">("upload");
   const [analysisStepIdx, setAnalysisStepIdx] = useState(0);
   const [existingAnalysisId, setExistingAnalysisId] = useState<string | null>(null);
+  const [tipsOpen, setTipsOpen] = useState(false);
 
   useEffect(() => {
     if (!loading || step !== "analyze") {
@@ -85,53 +92,25 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-7">
       {/* Hero */}
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-tertiary mb-2">
-          Video Analysis
-        </p>
+      <div className="animate-fade-in">
         <h1 className="text-3xl font-black tracking-tight text-on-surface font-headline">
           등반 영상 분석
         </h1>
-        <p className="text-on-surface-variant text-sm mt-2 leading-relaxed">
-          AI가 당신의 무브를 분석하여 최적의 솔루션을 제공합니다.
+        <p className="text-on-surface-variant text-sm mt-1.5 leading-relaxed">
+          AI가 무브를 분석하여 최적의 솔루션을 제공합니다.
         </p>
       </div>
 
       {step === "upload" && (
         <>
-          {/* Bento 촬영 가이드 */}
-          <div className="flex flex-col gap-3">
-            <div className="bg-surface-container-lowest rounded-xl p-5 flex items-center gap-4 shadow-ambient">
-              <div className="w-12 h-12 rounded-xl bg-on-surface flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-surface text-[24px]">crop_landscape</span>
-              </div>
-              <div>
-                <p className="font-bold text-sm text-on-surface">가로 모드 권장</p>
-                <p className="text-xs text-on-surface-variant mt-0.5">더 넓은 화각으로 전신을 담아주세요</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-surface-container-lowest rounded-xl p-5 shadow-ambient">
-                <span className="material-symbols-outlined text-primary text-[28px] mb-3 block">landscape</span>
-                <p className="font-bold text-sm text-on-surface">벽 전체 노출</p>
-                <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">홀드 전체가 보여야 분석이 정확합니다</p>
-              </div>
-              <div className="bg-surface-container-lowest rounded-xl p-5 shadow-ambient">
-                <span className="material-symbols-outlined text-tertiary text-[28px] mb-3 block">light_mode</span>
-                <p className="font-bold text-sm text-on-surface">밝은 조명</p>
-                <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">그늘진 곳 없이 밝은 환경에서 촬영</p>
-              </div>
-            </div>
-          </div>
-
-          {/* 파일 업로드 영역 */}
+          {/* 파일 업로드 영역 — 최상단 */}
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="bg-gradient-to-b from-surface-container-low to-surface-container rounded-2xl p-8 flex flex-col items-center gap-4 cursor-pointer border-2 border-dashed border-outline-variant/50 hover:border-primary/30 transition-colors"
+            className="animate-fade-in stagger-1 bg-surface-container-low rounded-2xl p-8 flex flex-col items-center gap-4 cursor-pointer border-2 border-dashed border-outline-variant/50 hover:border-primary/30 transition-colors"
           >
-            <div className="w-16 h-16 rounded-full bg-primary-fixed flex items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-primary-fixed flex items-center justify-center">
               <span className="material-symbols-outlined material-symbols-filled text-primary text-[32px]">upload_file</span>
             </div>
             <div className="text-center">
@@ -158,9 +137,46 @@ export default function UploadPage() {
             </p>
           )}
 
+          {/* 촬영 팁 — 접을 수 있는 accordion */}
+          <div className="animate-fade-in stagger-2">
+            <button
+              onClick={() => setTipsOpen(!tipsOpen)}
+              className="w-full flex items-center justify-between py-2 text-left active:scale-[0.99] transition-transform"
+            >
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-tertiary text-[18px]">lightbulb</span>
+                <span className="text-sm font-bold text-on-surface-variant">촬영 팁</span>
+              </div>
+              <span className={`material-symbols-outlined text-on-surface-variant text-[18px] transition-transform duration-200 ${tipsOpen ? "rotate-180" : ""}`}>
+                expand_more
+              </span>
+            </button>
+            <div
+              className="grid transition-all duration-300 ease-out"
+              style={{ gridTemplateRows: tipsOpen ? "1fr" : "0fr" }}
+            >
+              <div className="overflow-hidden">
+                <div className="flex flex-col gap-2 pt-2 pb-1">
+                  <div className="flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3">
+                    <span className="material-symbols-outlined text-on-surface-variant text-[20px]">crop_landscape</span>
+                    <p className="text-xs text-on-surface leading-relaxed">가로 모드로 전신을 담아주세요</p>
+                  </div>
+                  <div className="flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3">
+                    <span className="material-symbols-outlined text-on-surface-variant text-[20px]">landscape</span>
+                    <p className="text-xs text-on-surface leading-relaxed">벽 전체가 보이면 분석이 더 정확해요</p>
+                  </div>
+                  <div className="flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3">
+                    <span className="material-symbols-outlined text-on-surface-variant text-[20px]">light_mode</span>
+                    <p className="text-xs text-on-surface leading-relaxed">밝은 환경에서 촬영해주세요</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* 시도 결과 */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">
+          <div className="animate-fade-in stagger-3">
+            <label className="block text-xs font-bold text-on-surface-variant mb-3">
               시도 결과
             </label>
             <div className="flex gap-3">
@@ -168,7 +184,7 @@ export default function UploadPage() {
                 onClick={() => setAttemptResult("success")}
                 className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-sm transition-all active:scale-[0.98] ${
                   attemptResult === "success"
-                    ? "bg-primary-fixed/50 text-primary ring-2 ring-primary"
+                    ? "bg-secondary-container text-on-secondary-container ring-2 ring-secondary"
                     : "bg-surface-container-low text-on-surface-variant"
                 }`}
               >
@@ -179,7 +195,7 @@ export default function UploadPage() {
                 onClick={() => setAttemptResult("failure")}
                 className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-sm transition-all active:scale-[0.98] ${
                   attemptResult === "failure"
-                    ? "bg-surface-container-high text-on-surface ring-2 ring-outline"
+                    ? "bg-error-container text-on-error-container ring-2 ring-error"
                     : "bg-surface-container-low text-on-surface-variant"
                 }`}
               >
@@ -190,26 +206,25 @@ export default function UploadPage() {
           </div>
 
           {/* 숙련도 */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-3">
+          <div className="animate-fade-in stagger-4">
+            <label className="block text-xs font-bold text-on-surface-variant mb-3">
               클라이머 숙련도
             </label>
-            <div className="flex gap-2">
-              {([
-                { value: "beginner" as const, label: "입문" },
-                { value: "intermediate" as const, label: "중급" },
-                { value: "advanced" as const, label: "상급" },
-              ]).map((level) => (
+            <div className="flex flex-col gap-2">
+              {SKILL_LEVELS.map((level) => (
                 <button
                   key={level.value}
                   onClick={() => setSkillLevel(level.value)}
-                  className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] ${
+                  className={`w-full text-left px-4 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] flex items-center justify-between ${
                     skillLevel === level.value
                       ? "bg-secondary-container text-on-secondary-container ring-2 ring-secondary"
                       : "bg-surface-container-low text-on-surface-variant"
                   }`}
                 >
-                  {level.label}
+                  <span>{level.label}</span>
+                  <span className={`text-xs font-normal ${
+                    skillLevel === level.value ? "text-on-secondary-container/70" : "text-on-surface-variant/60"
+                  }`}>{level.desc}</span>
                 </button>
               ))}
             </div>
@@ -225,7 +240,7 @@ export default function UploadPage() {
           <button
             onClick={handleUpload}
             disabled={loading || !file || !duration}
-            className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary py-5 rounded-2xl font-black text-base shadow-xl shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2"
+            className="animate-fade-in stagger-5 w-full bg-primary text-on-primary py-5 rounded-2xl font-black text-base shadow-ambient-lg disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2"
           >
             AI 분석 시작하기
             <span className="material-symbols-outlined text-[20px]">rocket_launch</span>
@@ -234,7 +249,7 @@ export default function UploadPage() {
       )}
 
       {step === "duplicate" && (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-ambient p-6 flex flex-col gap-4">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-ambient p-6 flex flex-col gap-4 animate-fade-in">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-tertiary-container/20 flex items-center justify-center shrink-0">
               <span className="material-symbols-outlined text-tertiary text-[24px]">sync</span>
@@ -255,7 +270,7 @@ export default function UploadPage() {
           )}
           <button
             onClick={() => setStep("analyze")}
-            className="bg-gradient-to-r from-primary to-primary-container text-on-primary py-4 rounded-xl font-bold active:scale-[0.98] transition-transform"
+            className="bg-primary text-on-primary py-4 rounded-xl font-bold active:scale-[0.98] transition-transform"
           >
             새로 분석하기
           </button>
@@ -269,7 +284,7 @@ export default function UploadPage() {
       )}
 
       {step === "analyze" && (
-        <div className="bg-surface-container-lowest rounded-2xl shadow-ambient p-6 flex flex-col gap-5">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-ambient p-6 flex flex-col gap-5 animate-fade-in">
           {/* 업로드 완료 요약 */}
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-secondary-container/30 flex items-center justify-center shrink-0">
@@ -302,18 +317,16 @@ export default function UploadPage() {
                   const isActive = i === analysisStepIdx;
                   return (
                     <div key={i} className="flex flex-col items-center gap-2 relative">
-                      {/* 연결 바 */}
                       {i < ANALYSIS_STEPS.length - 1 && (
                         <div className={`absolute top-4 left-[calc(50%+12px)] w-[calc(100%-8px)] h-0.5 ${
                           isDone ? "bg-primary" : "bg-surface-container-high"
                         }`} style={{ width: "40px" }} />
                       )}
-                      {/* 원형 */}
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black z-10 transition-all duration-500 ${
                         isDone
                           ? "bg-primary text-on-primary ring-4 ring-primary-fixed"
                           : isActive
-                            ? "bg-surface-container-lowest border-4 border-primary animate-pulse shadow-lg shadow-primary/30"
+                            ? "bg-surface-container-lowest border-4 border-primary animate-pulse shadow-ambient"
                             : "bg-surface-container-high text-on-surface-variant opacity-40"
                       }`}>
                         {isDone ? (
@@ -357,14 +370,14 @@ export default function UploadPage() {
           {!loading && !error && (
             <button
               onClick={handleAnalyze}
-              className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary py-5 rounded-2xl font-black shadow-xl shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              className="w-full bg-primary text-on-primary py-5 rounded-2xl font-black shadow-ambient-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
               AI 분석 시작하기
               <span className="material-symbols-outlined text-[20px]">rocket_launch</span>
             </button>
           )}
           {loading && (
-            <button disabled className="w-full bg-gradient-to-r from-primary to-primary-container text-on-primary py-5 rounded-2xl font-black opacity-50 cursor-not-allowed">
+            <button disabled className="w-full bg-primary text-on-primary py-5 rounded-2xl font-black opacity-50 cursor-not-allowed">
               분석 중...
             </button>
           )}

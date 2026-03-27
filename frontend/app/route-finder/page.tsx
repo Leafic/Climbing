@@ -209,7 +209,7 @@ export default function RouteFinderPage() {
                   onClick={() => setSkillLevel(level.value)}
                   className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
                     skillLevel === level.value
-                      ? "bg-[#10b981] text-white shadow-sm"
+                      ? "bg-secondary text-on-secondary shadow-sm"
                       : "text-on-surface-variant hover:bg-surface-container-low"
                   }`}
                 >
@@ -236,15 +236,15 @@ export default function RouteFinderPage() {
 
           {/* 요약 박스 */}
           {selectedColor && (
-            <section className="bg-surface-container-low rounded-2xl p-5 border-l-4 border-[#10b981] shadow-sm">
+            <section className="bg-surface-container-low rounded-2xl p-5 border-l-4 border-secondary shadow-sm">
               <div className="flex items-center gap-3 mb-2">
                 <span className="material-symbols-outlined text-on-secondary-container" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
                 <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">AI 분석 준비 완료</span>
               </div>
               <p className="text-sm text-on-surface leading-relaxed">
-                AI에게 전달될 정보: <span className="font-bold text-[#10b981]">{selectedColor}</span>
+                AI에게 전달될 정보: <span className="font-bold text-secondary">{selectedColor}</span>
                 {startHint && (
-                  <span> / 시작점: <span className="font-bold text-[#10b981]">{startHint}</span></span>
+                  <span> / 시작점: <span className="font-bold text-secondary">{startHint}</span></span>
                 )}
               </p>
             </section>
@@ -258,7 +258,7 @@ export default function RouteFinderPage() {
                   <p className="text-xl font-black text-on-surface">분석 진행 중...</p>
                   <p className="text-xs text-on-surface-variant mt-1">루트 경로를 탐색하고 있습니다</p>
                 </div>
-                <p className="text-3xl font-black text-[#10b981]">{ANALYSIS_STEPS[stepIdx].pct}%</p>
+                <p className="text-3xl font-black text-secondary">{ANALYSIS_STEPS[stepIdx].pct}%</p>
               </div>
               <div className="flex items-center justify-between px-2">
                 {ANALYSIS_STEPS.map((s, i) => {
@@ -268,14 +268,14 @@ export default function RouteFinderPage() {
                     <div key={i} className="flex flex-col items-center gap-2 relative">
                       {i < ANALYSIS_STEPS.length - 1 && (
                         <div className={`absolute top-4 left-[calc(50%+12px)] h-0.5 ${
-                          isDone ? "bg-[#10b981]" : "bg-surface-container-high"
+                          isDone ? "bg-secondary" : "bg-surface-container-high"
                         }`} style={{ width: "30px" }} />
                       )}
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black z-10 transition-all duration-500 ${
                         isDone
-                          ? "bg-[#10b981] text-white ring-4 ring-emerald-200"
+                          ? "bg-secondary text-white ring-4 ring-secondary-container"
                           : isActive
-                            ? "bg-surface-container-lowest border-4 border-[#10b981] animate-pulse shadow-lg"
+                            ? "bg-surface-container-lowest border-4 border-secondary animate-pulse shadow-lg"
                             : "bg-surface-container-high text-on-surface-variant opacity-40"
                       }`}>
                         {isDone ? (
@@ -285,7 +285,7 @@ export default function RouteFinderPage() {
                         )}
                       </div>
                       <span className={`text-[9px] font-semibold ${
-                        isActive ? "text-[#10b981]" : isDone ? "text-on-surface" : "text-on-surface-variant opacity-40"
+                        isActive ? "text-secondary" : isDone ? "text-on-surface" : "text-on-surface-variant opacity-40"
                       }`}>
                         {s.label}
                       </span>
@@ -308,7 +308,7 @@ export default function RouteFinderPage() {
               <button
                 onClick={handleAnalyze}
                 disabled={!file || !hasSelection}
-                className="w-full py-4 bg-[#10b981] hover:brightness-110 active:scale-95 transition-all text-white font-bold text-lg rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-secondary active:scale-95 transition-all text-on-secondary font-bold text-lg rounded-2xl flex items-center justify-center gap-3 shadow-ambient-lg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span className="material-symbols-outlined">search_insights</span>
                 <span>루트 분석 시작</span>
@@ -316,7 +316,7 @@ export default function RouteFinderPage() {
             </section>
           )}
           {loading && (
-            <button disabled className="w-full py-4 bg-[#10b981] text-white font-bold text-lg rounded-2xl opacity-50 cursor-not-allowed">
+            <button disabled className="w-full py-4 bg-secondary text-on-secondary font-bold text-lg rounded-2xl opacity-50 cursor-not-allowed">
               분석 중...
             </button>
           )}
@@ -329,7 +329,7 @@ export default function RouteFinderPage() {
           <RouteResultCard result={result} />
           <button
             onClick={() => { setResult(null); setFile(null); setPreview(null); setHoldColor(""); setRouteNumber(""); setStartHint(""); }}
-            className="w-full bg-gradient-to-r from-primary to-primary-container text-white font-bold py-5 rounded-2xl flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-transform duration-200 mb-10"
+            className="w-full bg-primary text-on-primary font-bold py-5 rounded-2xl flex items-center justify-center gap-2 shadow-ambient-lg active:scale-95 transition-transform duration-200 mb-10"
           >
             <span className="material-symbols-outlined">add_a_photo</span>
             다른 벽 분석하기

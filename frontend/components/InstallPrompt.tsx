@@ -11,10 +11,12 @@ export default function InstallPrompt() {
       || (navigator as any).standalone === true;
     if (isStandalone) return;
 
-    const dismissed = localStorage.getItem("install-prompt-dismissed");
+    const dismissed = sessionStorage.getItem("install-prompt-dismissed-session")
+      || localStorage.getItem("install-prompt-dismissed");
     if (dismissed) {
+      if (sessionStorage.getItem("install-prompt-dismissed-session")) return;
       const dismissedAt = parseInt(dismissed, 10);
-      if (Date.now() - dismissedAt < 24 * 60 * 60 * 1000) return;
+      if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
     }
 
     const visits = parseInt(localStorage.getItem("visit-count") || "0", 10) + 1;
@@ -28,13 +30,14 @@ export default function InstallPrompt() {
 
   const dismiss = () => {
     localStorage.setItem("install-prompt-dismissed", String(Date.now()));
+    sessionStorage.setItem("install-prompt-dismissed-session", "1");
     setShow(false);
   };
 
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-24 left-4 right-4 z-40 bg-surface-container-lowest rounded-2xl shadow-ambient p-5 flex items-start gap-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+    <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-4 right-4 z-40 bg-surface-container-lowest rounded-2xl shadow-ambient-lg p-4 flex items-start gap-3">
       <div className="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center shrink-0">
         <span className="material-symbols-outlined text-primary">download</span>
       </div>
